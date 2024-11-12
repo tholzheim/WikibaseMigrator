@@ -1,0 +1,55 @@
+name: test
+description: |
+  Wikidata to TestWikidata Mapping configuration to test the migration process
+source:
+  name: Wikidata
+  sparql_url: https://query.wikidata.org/sparql
+  mediawiki_api_url: https://www.wikidata.org/w/api.php
+  mediawiki_rest_url: https://www.wikidata.org/w/rest.php
+  website: https://wikidata.org/
+  item_prefix: http://www.wikidata.org/entity/
+  user:
+  password:
+target:
+  name: Test-Wikibase
+  sparql_url: http://query.wikibasetest.com/proxy/wdqs/bigdata/namespace/wdq/sparql
+  mediawiki_api_url: http://wikibase.wikibasetest.com/w/api.php
+  mediawiki_rest_url: http://wikibase.wikibasetest.com/w/rest.php
+  website: http://wikibase.wikibasetest.com
+  quickstatement_url: http://qs.wikibasetest.com/#
+  item_prefix: http://wikibase.wikibasetest.com/entity/
+  user: Admin@WikibaseMigrator
+  bot_password: gd88tp0mi91m100tivpjjt8bruhfffjv
+  consumer_key:
+  tag: wikibasemigrator-1.0
+mapping:
+  location_of_mapping: Test-Wikibase
+  item_mapping_query: |
+    SELECT ?source_item ?target_item
+    WHERE{
+
+      VALUES ?source_item {
+        $source_items
+      }
+      BIND(IRI(CONCAT("https://www.wikidata.org/wiki/", STR( ?source_item))) as ?wd_qid)
+      ?wd_qid schema:isPartOf <https://www.wikidata.org/>.
+      ?wd_qid schema:about ?factgrid_item.
+      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_item)
+    }
+  property_mapping_query: |
+    SELECT ?source_item ?target_item
+    WHERE{
+
+      VALUES ?source_item {
+        $source_items
+      }
+      ?factgrid_item wdt:P2 ?source_item.
+      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_item)
+    }
+back_reference:
+  item:
+    type: Sidelink
+    id: wikidatawiki
+  property:
+    type: Property
+    id: P2

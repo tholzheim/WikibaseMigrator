@@ -1,0 +1,55 @@
+name: WikibaseMigrationTest Translator
+description: |
+  Wikidata to TestWikidata Mapping configuration to test the migration process
+source:
+  name: Wikidata
+  sparql_url: https://query.wikidata.org/sparql
+  mediawiki_api_url: https://www.wikidata.org/w/api.php
+  mediawiki_rest_url: https://www.wikidata.org/w/rest.php
+  website: https://wikidata.org/
+  item_prefix: http://www.wikidata.org/entity/
+  user:
+  password:
+target:
+  name: WikibaseMigrationTest
+  sparql_url: https://wbmigration-test.wikibase.cloud/query/sparql
+  mediawiki_api_url: https://wbmigration-test.wikibase.cloud/w/api.php
+  mediawiki_rest_url: https://wbmigration-test.wikibase.cloud/w/rest.php
+  website: https://wbmigration-test.wikibase.cloud
+  quickstatement_url: https://wbmigration-test.wikibase.cloud/tools/quickstatements/
+  item_prefix: https://wbmigration-test.wikibase.cloud/entity/
+  user: Tholzheim@WikibaseMigratorBot
+  bot_password: 5lm8g6a9nca960rmfm9lf6shjvlh4bns
+  consumer_key:
+  tag: wikibasemigrator-1.0
+mapping:
+  location_of_mapping: WikibaseMigrationTest
+  item_mapping_query: |
+    PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
+    SELECT ?source_item ?target_item
+    WHERE{
+
+      VALUES ?source_item {
+        $source_items
+      }
+      ?factgrid_item wdt:P10 ?source_item.
+      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_item)
+    }
+  property_mapping_query: |
+    PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
+    SELECT ?source_item ?target_item
+    WHERE{
+
+      VALUES ?source_item {
+        $source_items
+      }
+      ?factgrid_item wdt:P8 ?source_item.
+      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_item)
+    }
+back_reference:
+  item:
+    type: Property
+    id: P10
+  property:
+    type: Property
+    id: P8

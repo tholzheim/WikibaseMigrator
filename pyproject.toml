@@ -1,0 +1,171 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wikibasemigrator"
+authors = [
+    {name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de"},
+]
+maintainers = [
+    {name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de"},
+]
+version = "0.0.1"
+readme = "README.md"
+license= "Apache-2.0"
+dependencies = [
+    "pydantic",
+    "typer",
+    "wikibaseintegrator>=0.12.8",
+    "quickstatements_client",
+    "python-dateutil",
+    "pyyaml",
+    "nicegui",
+    "pandas",
+    "SPARQLWrapper",
+    "Pygments"
+]
+
+requires-python = ">=3.10"
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License"
+    ]
+dynamic = [ "description"]
+
+
+[project.urls]
+Home = ""
+Documentation = ""
+Source = ""
+
+[project.optional-dependencies]
+test = [
+    "tox",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+  "src/wikibasemigrator",
+]
+
+[project.scripts]
+wbmigrate = "wikibasemigrator.cli:app"
+
+[tool.ruff]
+# Set the maximum line length to 79.
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = [
+    # if-else-block-instead-of-if-exp
+    "SIM108",
+    # nested with statements (not working correctly with nicegui)
+    "SIM117"
+]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+#fixable = ["ALL"]
+
+
+[tool.ruff.format]
+# Like Black, automatically detect the appropriate line ending
+line-ending = "auto"
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    env_list = lint, type, py{310,311,312}
+    minversion = 4.15.0
+
+    [testenv]
+    description = run the tests with pytest
+    deps =.[test]
+    package = wheel
+    wheel_build_env = .pkg
+    allowlist_externals =
+        scripts/*
+        coverage
+    commands =
+        pytest --junitxml=report.xml {tty:--color=yes} {posargs}
+
+    [testenv:coverage]
+    description = run terst coverage
+    deps =
+        .[test]
+    commands =
+        pytest --cov --cov-append {tty:--color=yes} {posargs}
+        coverage xml
+
+    [testenv:format]
+    description = install ruff and format the project code
+    deps =
+        ruff
+    commands =
+        ruff format
+
+    [testenv:lint]
+    description = run linters
+    skip_install = true
+    deps =
+        ruff
+    commands =
+        ruff check --fix
+
+    [testenv:type]
+    description = run type checks
+    deps =
+        mypy>=1.1
+    commands =
+        mypy  {posargs:src/wikibasemigrator}
+"""
+[tool.mypy]
+follow_imports = "skip"
+strict_optional = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["yaml","dateutil.parser", "dateutil", "tabulate", "requests"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+
+[tool.datamodel-codegen]
+field-constraints = true
+snake-case-field = false
+strip-default-none = false
+target-python-version = "3.10"
+
+[tool.black]
+skip-string-normalization = true
+line-length = 120
