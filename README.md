@@ -19,3 +19,5 @@ Tool to migrate Wikidata items to FactGrid
 * Create Tag for FactGridTranslator
   * https://database.factgrid.de/wiki/Special:Tags
 * How to handle label= description validation errors?
+* Add property value format constraint to property  https://database.factgrid.de/wiki/Property:P343
+  * E.g. p767 https://database.factgrid.de/wiki/Property:P511

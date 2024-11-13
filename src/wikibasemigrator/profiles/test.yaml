@@ -23,7 +23,7 @@ target:
   consumer_key:
   tag: wikibasemigrator-1.0
 mapping:
-  location_of_mapping: Test-Wikibase
+  location_of_mapping: target
   item_mapping_query: |
     SELECT ?source_item ?target_item
     WHERE{

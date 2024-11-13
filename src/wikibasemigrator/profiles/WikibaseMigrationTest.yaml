@@ -18,12 +18,12 @@ target:
   website: https://wbmigration-test.wikibase.cloud
   quickstatement_url: https://wbmigration-test.wikibase.cloud/tools/quickstatements/
   item_prefix: https://wbmigration-test.wikibase.cloud/entity/
-  user: Tholzheim@WikibaseMigratorBot
-  bot_password: 5lm8g6a9nca960rmfm9lf6shjvlh4bns
+  user:
+  bot_password:
   consumer_key:
   tag: wikibasemigrator-1.0
 mapping:
-  location_of_mapping: WikibaseMigrationTest
+  location_of_mapping: target
   item_mapping_query: |
     PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
     SELECT ?source_item ?target_item
@@ -46,6 +46,7 @@ mapping:
       ?factgrid_item wdt:P8 ?source_item.
       BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_item)
     }
+  sidelinks: []
 back_reference:
   item:
     type: Property

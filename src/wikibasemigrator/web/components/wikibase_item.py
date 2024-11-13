@@ -12,8 +12,8 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
         self,
         source_url: str | HttpUrl,
         target_url: str | HttpUrl,
-        source_labels: dict[str, str],
-        target_labels: dict[str, str],
+        source_labels: dict[str, str] | None,
+        target_labels: dict[str, str] | None,
         translation_result: ItemTranslationResult | None = None,
         entity: dict | None = None,
     ) -> None:
@@ -61,14 +61,14 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
             if claim.mainsnak.property_number not in claims:
                 claims[claim.mainsnak.property_number] = []
             claims[claim.mainsnak.property_number].append(claim_record)
-        claim_records = [
+        claim_records: list[dict[str, str | list | None]] = [
             {"s_id": s_id, "t_id": mappings.get(s_id, None), "snaks": snaks} for s_id, snaks in claims.items()
         ]
         # Sort claims: properties with mapping first than sort by property number
         claim_records.sort(
-            key=lambda x: int(f"1{x['s_id'].removeprefix('P')}")
-            if x["t_id"] is not None
-            else int(f"9{x['s_id'].removeprefix('P')}")
+            key=lambda x: int(f"1{x.get('s_id', '').removeprefix('P')}")  # type: ignore
+            if x.get("t_id") is not None
+            else int(f"9{x.get('s_id', '').removeprefix('P')}")  # type: ignore
         )
         entity_record = {
             "s_id": item.id,

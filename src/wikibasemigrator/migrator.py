@@ -12,10 +12,11 @@ from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator.wbi_enums import WikibaseSnakType
 from wikibaseintegrator.wbi_exceptions import MissingEntityException, NonExistentEntityError
 
-from wikibasemigrator import __version__ as version
+from wikibasemigrator import WbEntity
+from wikibasemigrator.exceptions import UnknownEntityTypeException
 from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
-from wikibasemigrator.wikibase import get_default_user_agent
+from wikibasemigrator.wikibase import WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +29,51 @@ class ItemTranslationResult(BaseModel):
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    item: ItemEntity
-    original_item: ItemEntity
+    item: WbEntity
+    original_item: WbEntity
     missing_properties: list[str] = Field(default_factory=list)
     missing_items: list[str] = Field(default_factory=list)
-    item_mapping: dict[str, str] = Field(default_factory=dict)
-    created_entity: ItemEntity | PropertyEntity | None = None
+    item_mapping: dict[str, str | None] = Field(default_factory=dict)
+    created_entity: WbEntity | None = None
     errors: list[str] = Field(default_factory=list)
 
     def add_missing_property(self, property_id: str):
+        """
+        add missing property
+        :param property_id:
+        :return:
+        """
+
         self.missing_properties.append(property_id)
 
     def add_missing_item(self, item_id: str):
+        """
+        add missing item
+        :param item_id:
+        :return:
+        """
         self.missing_items.append(item_id)
 
-    def add_item_mapping(self, source_id: str, target_id: str):
+    def add_item_mapping(self, source_id: str, target_id: str | None):
+        """
+        add given mapping to mappings
+        :param source_id:
+        :param target_id:
+        :return:
+        """
         self.item_mapping[source_id] = target_id
+
+    def add_item_mappings(self, mappings: dict[str, str | None]):
+        """
+        Update mappings with given mappings
+        :param mappings:
+        :return:
+        """
+        self.item_mapping.update(mappings)
 
 
 class ItemSetTranslationResult(BaseModel):
+    # ToDo: refactor to entitities
     items: dict[str, ItemTranslationResult] = Field(default_factory=dict)
 
     @classmethod
@@ -56,7 +83,7 @@ class ItemSetTranslationResult(BaseModel):
             res.items[item.original_item.id] = item
         return res
 
-    def get_created_entities(self) -> list[ItemEntity | PropertyEntity]:
+    def get_created_entities(self) -> list[WbEntity]:
         return [entity.created_entity for entity in self.items.values()]
 
     def get_missing_properties(self) -> list[str]:
@@ -75,7 +102,7 @@ class ItemSetTranslationResult(BaseModel):
             missing.update(item.missing_items)
         return list(missing)
 
-    def get_mapping(self) -> dict[str, str]:
+    def get_mapping(self) -> dict[str, str | None]:
         """
         Get all mappings that are used
         :return:
@@ -85,6 +112,34 @@ class ItemSetTranslationResult(BaseModel):
             mapping.update(item.item_mapping)
         return mapping
 
+    def get_existing_mappings(self) -> dict[str, str]:
+        """
+        Get all existing mappings
+        :return:
+        """
+        return {key: value for key, value in self.get_mapping().items() if value is not None}
+
+    def get_missing_mappings(self) -> list[str]:
+        """
+        Get all missing mappings
+        :return:
+        """
+        return [key for key, value in self.get_mapping().items() if value is None]
+
+    def get_missing_item_mapings(self) -> list[str]:
+        """
+        Get all missing item mappings
+        :return:
+        """
+        return [value for value in self.get_missing_mappings() if value.startswith("Q")]
+
+    def get_missing_property_mapings(self) -> list[str]:
+        """
+        Get all missing property mappings
+        :return:
+        """
+        return [value for value in self.get_missing_mappings() if value.startswith("P")]
+
     def get_translation_source_item_ids(self):
         """
         Get IDs of all main source items
@@ -92,11 +147,36 @@ class ItemSetTranslationResult(BaseModel):
         """
         return [item.original_item.id for item in self.items.values()]
 
-    def get_target_items(self):
+    def get_target_entities(self) -> list[WbEntity]:
         """
         Get all target items
         """
         return [translation_result.item for translation_result in self.items.values()]
+
+    def get_source_entities(self) -> list[WbEntity]:
+        """
+        Get all source items
+        """
+        return [translation_result.original_item for translation_result in self.items.values()]
+
+    def get_source_entity_ids(self) -> list[str]:
+        """
+        Get IDs of all source entities that are used
+        """
+        return [entity_id for entity_id in self.get_mapping()]
+
+    def get_target_entity_ids(self) -> list[str]:
+        """
+        Get IDs of all target entities that are used
+        """
+        return [entity_id for entity_id in self.get_mapping().values()]
+
+    def get_source_root_entity_ids(self):
+        """
+        Get IDs of all source items to migrate.
+        Only the "subject" ids no ids used in any statement, qualifier or reference
+        """
+        return [item.id for item in self.get_source_entities() if item.id]
 
     def get_translation_result_by_source_id(self, source_id: str) -> ItemTranslationResult | None:
         """
@@ -136,38 +216,37 @@ class WikibaseMigrator:
             self._source_wbi = self.get_wikibase_integrator(self.profile.source)
         return self._source_wbi
 
-    def get_items_from_source(self, item_ids: list[str]) -> list[ItemEntity]:
+    def get_items_from_source(self, item_ids: list[str]) -> list[WbEntity]:
         return self.get_items(item_ids, self.profile.source, self.source_wbi)
 
-    def get_items_from_target(self, item_ids: list[str]) -> list[ItemEntity]:
+    def get_items_from_target(self, item_ids: list[str]) -> list[WbEntity]:
         return self.get_items(item_ids, self.profile.target, self.target_wbi)
 
     def get_items(
         self, item_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator
-    ) -> list[ItemEntity]:
-        with (
-            ThreadPoolExecutor(max_workers=10) as executor
-        ):  # ToDo: WARNING:urllib3.connectionpool:Connection pool is full, [...] Connection pool size: 10  # noqa: E501
+    ) -> list[WbEntity]:
+        # ToDo: WARNING:urllib3.connectionpool:Connection pool is full, [...] Connection pool size: 10  # noqa: E501
+        with ThreadPoolExecutor(max_workers=10) as executor:
             func = partial(WikibaseMigrator.get_item, wikibase_config=wikibase_config, wbi=wbi)
-            result = executor.map(func, item_ids)
-        result = [item for item in result if item is not None]
+            results_with_none = executor.map(func, item_ids)
+        result = [item for item in results_with_none if item is not None]
         return result
 
-    def get_item_from_source(self, qid: str) -> ItemEntity | None:
+    def get_item_from_source(self, qid: str) -> WbEntity | None:
         """
         Get item from source wikibase
         :param qid: id of the item to retrieve
-        :return: ItemEntity or None if not existent
+        :return: WbEntity or None if not existent
         """
-        return self.get_item(qid=qid, wikibase_config=self.profile.source, wbi=self.source_wbi)
+        return self.get_item(entity_id=qid, wikibase_config=self.profile.source, wbi=self.source_wbi)
 
-    def get_item_from_target(self, qid: str) -> ItemEntity | None:
+    def get_item_from_target(self, qid: str) -> WbEntity | None:
         """
         Get item from target wikibase
         :param qid: id of the item to retrieve
-        :return: ItemEntity or None if not existent
+        :return: WbEntity or None if not existent
         """
-        return self.get_item(qid=qid, wikibase_config=self.profile.target, wbi=self.target_wbi)
+        return self.get_item(entity_id=qid, wikibase_config=self.profile.target, wbi=self.target_wbi)
 
     @staticmethod
     def get_wikibase_integrator(wikibase_config: WikibaseConfig) -> WikibaseIntegrator:
@@ -176,7 +255,18 @@ class WikibaseMigrator:
         :param wikibase_config:
         :return:
         """
-        login = None
+        login = WikibaseMigrator.get_wikibase_login(wikibase_config)
+        return WikibaseIntegrator(login=login)
+
+    @staticmethod
+    def get_wikibase_login(
+        wikibase_config: WikibaseConfig,
+    ) -> wbi_login.Login | wbi_login.Clientlogin | wbi_login.OAuth1 | wbi_login.OAuth2 | None:
+        """
+        Get a login instance for the given wikibase configuration
+        :param wikibase_config:
+        :return:
+        """
         if wikibase_config.consumer_key:
             logger.debug(f"Using OAuth2 as authentication for {wikibase_config.name}")
             login = wbi_login.OAuth2(
@@ -201,31 +291,49 @@ class WikibaseMigrator:
                 mediawiki_api_url=wikibase_config.mediawiki_api_url,
                 user_agent=get_default_user_agent(),
             )
-        return WikibaseIntegrator(login=login)
+        else:
+            login = None
+        return login
 
     @classmethod
-    def get_item(cls, qid: str, wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator) -> ItemEntity | None:
+    def get_item(cls, entity_id: str, wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator) -> WbEntity | None:
         """
         Get item from given wikibase
-        :param qid: id of the item to retrieve
+        :param entity_id: id of the item to retrieve
         :param wikibase_config:
-        :return: ItemEntity or None if not existent
+        :return: WbEntity or None if not existent
         """
         try:
             mediawiki_api_url = wikibase_config.mediawiki_api_url
-            logger.debug(f"Retrieving item {qid} from {wikibase_config.name}")
+            logger.debug(f"Retrieving item {entity_id} from {wikibase_config.name}")
             start_time = datetime.now()
-            item = wbi.item.get(qid, mediawiki_api_url=mediawiki_api_url, user_agent=f"WikibaseMigrator/{version}")
-            logger.debug(f"Item {qid} retrival took {(datetime.now() - start_time).total_seconds()}s")
-        except NonExistentEntityError:
+            user_agent = get_default_user_agent()
+            if entity_id.startswith("Q"):
+                item = wbi.item.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+            elif entity_id.startswith("P"):
+                item = wbi.property.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+            elif entity_id.startswith("L"):
+                item = wbi.lexeme.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+            elif entity_id.startswith("M"):
+                item = wbi.mediainfo.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+            else:
+                raise UnknownEntityTypeException(entity_id)
+            logger.debug(f"Entity {entity_id} retrival took {(datetime.now() - start_time).total_seconds()}s")
+        except NonExistentEntityError as e:
             item = None
-        except MissingEntityException:
+            logger.exception(e)
+        except MissingEntityException as e:
             item = None
-            logger.debug(f"Item {qid} not found in {wikibase_config.name}")
+            logger.debug(f"Item {entity_id} not found in {wikibase_config.name}")
+            logger.exception(e)
+        except UnknownEntityTypeException as e:
+            item = None
+            logger.warning(f"Unknown entity id {entity_id} type")
+            logger.exception(e)
         return item
 
     @staticmethod
-    def get_all_items_ids(item: ItemEntity) -> list[str]:
+    def get_all_items_ids(item: WbEntity) -> list[str]:
         """
         Get all main items that are used in the given item either properties, property values, references.
         This does not include statement ids only proper Q and P ids
@@ -249,13 +357,13 @@ class WikibaseMigrator:
                         ids.add(reference.datavalue["value"]["id"])
         return list(ids)
 
-    def update_item(self, item: ItemEntity) -> None:
+    def update_item(self, item: WbEntity) -> None:
         """
         Add missing statements from source to target
         """
         raise NotImplementedError
 
-    def prepare_mapper_cache(self, item: ItemEntity):
+    def prepare_mapper_cache(self, item: WbEntity):
         """
         prepare the mapper cache with the mappings for the given item
         :param item:
@@ -272,11 +380,16 @@ class WikibaseMigrator:
         """
         self.mapper.prepare_cache_for(item_ids)
 
-    def add_translation_result_mappings(self, item: ItemEntity, translation_result: ItemTranslationResult):
-        used_ids = self.get_all_items_ids(item)
-        for source_id in used_ids:
-            target_id = self.mapper.get_mapping_for(source_id)
-            translation_result.add_item_mapping(source_id, target_id)
+    def add_translation_result_mappings(self, translation_result: ItemTranslationResult):
+        """
+        add translation mappings that are used by the item to the translation result
+        :param item:
+        :param translation_result:
+        :return:
+        """
+        used_ids = self.get_all_items_ids(translation_result.original_item)
+        mappings = {source_id: self.mapper.get_mapping_for(source_id) for source_id in used_ids}
+        translation_result.add_item_mappings(mappings)
 
     def translate_items_by_id(self, item_ids: list[str]) -> ItemSetTranslationResult:
         """
@@ -297,7 +410,7 @@ class WikibaseMigrator:
 
     def translate_item(
         self,
-        item: ItemEntity,
+        item: WbEntity,
         allowed_languages: list[str] | None = None,
         allowed_sitelinks: list[str] | None = None,
         with_back_reference: bool = True,
@@ -315,9 +428,23 @@ class WikibaseMigrator:
         if allowed_sitelinks is None:
             allowed_sitelinks = self.profile.get_allowed_sidelinks()
         self.prepare_mapper_cache(item)
-        new_item = self.target_wbi.item.new()
+        match item.ETYPE:
+            case WikibaseEntityTypes.ITEM:
+                new_item = self.target_wbi.item.new()
+            case WikibaseEntityTypes.PROPERTY:
+                new_item = self.target_wbi.property.new()
+                new_item.datatype = item.datatype
+            case WikibaseEntityTypes.MEDIAINFO:
+                new_item = self.target_wbi.mediainfo.new()
+            case WikibaseEntityTypes.LEXEME:
+                new_item = self.target_wbi.lexeme.new()
+                # ToDo: Translate lemmas
+                # ToDo: Translate forms
+                # ToDo: Translate senses
+            case _:
+                raise ValueError(f"Unsupported item type: {type(item)}")
         result = ItemTranslationResult(item=new_item, original_item=item, missing_properties=[], missing_items=[])
-        self.add_translation_result_mappings(item, result)
+        self.add_translation_result_mappings(result)
         # add label
         for label in item.labels:
             if label.language not in allowed_languages:
@@ -329,18 +456,20 @@ class WikibaseMigrator:
             desc_value = description.value
             if desc_value == item.labels.get(description.language):
                 # Workaround for label=description validation error → https://github.com/wikimedia/mediawiki-extensions-Wikibase/blob/ae95f990c447a6470667fd16d5b1513003e74cee/repo/i18n/en.json#L190C50-L190C121
-                desc_value += " "
+                # ToDo: Decide how to handle this
+                continue
             new_item.descriptions.set(description.language, description.value)
         for language, aliases in item.aliases.aliases.items():
             if language not in allowed_languages:
                 continue
             alias_values = [alias.value for alias in aliases]
             new_item.aliases.set(language, alias_values)
-        for sitelink in item.sitelinks.sitelinks.values():
-            if sitelink.site not in allowed_sitelinks:
-                continue
-            # ToDo: badges also require a mapping → currently not queried
-            new_item.sitelinks.set(site=sitelink.site, title=sitelink.title)
+        if item.ETYPE in WikibaseEntityTypes.support_sidelinks():
+            for sitelink in item.sitelinks.sitelinks.values():
+                if sitelink.site not in allowed_sitelinks:
+                    continue
+                # ToDo: badges also require a mapping → currently not queried
+                new_item.sitelinks.set(site=sitelink.site, title=sitelink.title)
         for claim in item.claims:
             new_qualifiers = Qualifiers()
             for qualifier in claim.qualifiers:
@@ -489,16 +618,31 @@ class WikibaseMigrator:
         return new_snak
 
     def add_back_reference(self, entity: ItemEntity, source_id: str) -> None:
-        if isinstance(entity, ItemEntity):
-            back_reference = self.profile.back_reference.item
-        elif isinstance(entity, PropertyEntity):
-            back_reference = self.profile.back_reference.property
-        else:
-            logger.warning(f"Back reference not defined for type {type(entity)}")
+        """
+        Add back reference to the given entity. The kind of backreference is read from the profile config.
+        :param entity:
+        :param source_id:
+        :return:
+        """
+        if self.profile.back_reference is None:
+            logger.debug(f"No backreference defined: adding no back reference to {entity.id}")
             return
+        match entity.ETYPE:
+            case WikibaseEntityTypes.ITEM:
+                back_reference = self.profile.back_reference.item
+            case WikibaseEntityTypes.PROPERTY:
+                back_reference = self.profile.back_reference.property
+            case _:
+                # ToDo: add support for other types
+                logger.warning(f"Back reference not defined for type {type(entity)}")
+                return
         match back_reference.reference_type:
             case EntityBackReferenceType.SIDELINK:
-                entity.sitelinks.set(site=back_reference.property_id, title=source_id)
+                if entity.ETYPE in WikibaseEntityTypes.support_sidelinks():
+                    entity.sitelinks.set(site=back_reference.property_id, title=source_id)
+                else:
+                    logger.warning(f"Type {entity.ETYPE} does not support sidelinks define a different back reference")
+                    raise ValueError("Unsupported back reference type and property combination")
             case EntityBackReferenceType.PROPERTY:
                 claim = datatypes.ExternalID(
                     prop_nr=back_reference.property_id,
@@ -521,8 +665,9 @@ class WikibaseMigrator:
         """
         logger.info(f"Migrating {len(translations.items)} entities to target {self.profile.target.name}: {summary}")
         results = []
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = []
+            login = self.get_wikibase_login(self.profile.target)
             for entity in translations:
                 future = executor.submit(
                     self._migrate_entity,
@@ -530,6 +675,7 @@ class WikibaseMigrator:
                     summary=summary,
                     mediawiki_api_url=self.profile.target.mediawiki_api_url,
                     tags=self.profile.target.get_tags(),
+                    login=login,
                 )
                 futures.append(future)
                 if entity_done_callback:
@@ -545,6 +691,7 @@ class WikibaseMigrator:
         mediawiki_api_url: str,
         summary: str | None = None,
         tags: list[str] | None = None,
+        login: wbi_login.Login | wbi_login.Clientlogin | wbi_login.OAuth1 | wbi_login.OAuth2 | None = None,
     ) -> ItemTranslationResult:
         """
         migrates given entity to the given wikibase instance (url)
@@ -555,7 +702,7 @@ class WikibaseMigrator:
         :return: entity with the ID
         """
         try:
-            res = entity.item.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags)
+            res = entity.item.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags, login=login)
             entity.created_entity = res
         except Exception as e:
             logger.info(f"Failed to migrate entity {entity.original_item.id}")

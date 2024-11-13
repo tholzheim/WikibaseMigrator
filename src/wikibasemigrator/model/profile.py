@@ -1,8 +1,4 @@
-import base64
-import hashlib
 import logging
-import os
-import re
 from enum import Enum
 from pathlib import Path
 
@@ -40,27 +36,23 @@ class WikibaseConfig(BaseModel):
             self.password = None
 
     def get_tags(self) -> list[str]:
+        """
+        Get tags that should be added to the edits of the WikibaseMigrator
+        :return:
+        """
         tags = []
         if self.tag is not None:
             tags.append(self.tag)
         return tags
 
-    def get_oauth_url(self) -> str:
-        code_verifier = base64.urlsafe_b64encode(os.urandom(40)).decode("utf-8")
-        code_verifier = re.sub("[^a-zA-Z0-9]+", "", code_verifier)
-        code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
-        code_challenge = base64.urlsafe_b64encode(code_challenge).decode("utf-8")
-        code_challenge = code_challenge.replace("=", "")
-        params = {
-            "response_type": "code",
-            "client_id": self.consumer_key,
-            # "scope": "openid",
-            "redirect_uri": "http://localhost:8009/oauth_callback",
-            "code_challenge": code_challenge,
-            "code_challenge_method": "S256",
-        }
-        query = "&".join([f"{k}={v}" for k, v in params.items()])
-        return f"{self.mediawiki_rest_url}/oauth2/authorize?{query}"
+
+class MigrationWikibaseLocation(str, Enum):
+    """
+    location of where to look for the mapping
+    """
+
+    SOURCE = "source"
+    TARGET = "target"
 
 
 class EntityMappingConfig(BaseModel):
@@ -68,7 +60,7 @@ class EntityMappingConfig(BaseModel):
     configuration for extracting the item mapping between source and target
     """
 
-    location_of_mapping: str
+    location_of_mapping: MigrationWikibaseLocation = MigrationWikibaseLocation.TARGET
     item_mapping_query: str
     property_mapping_query: str
     languages: list[str] | None = None
@@ -108,7 +100,7 @@ class WikibaseMigrationProfile(BaseModel):
     source: WikibaseConfig
     target: WikibaseConfig
     mapping: EntityMappingConfig
-    back_reference: BackReference
+    back_reference: BackReference | None = None
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:
         """
@@ -134,6 +126,18 @@ class WikibaseMigrationProfile(BaseModel):
         if self.mapping.sidelinks is None:
             self.mapping.sidelinks = ["enwiki", "dewiki", "wikidatawiki"]
         return self.mapping.sidelinks
+
+    def get_wikibase_config_of_mapping_location(self) -> WikibaseConfig:
+        """
+        Get the wikibase config of the wikibase that stores the mappings
+        """
+        match self.mapping.location_of_mapping:
+            case MigrationWikibaseLocation.SOURCE:
+                return self.source
+            case MigrationWikibaseLocation.TARGET:
+                return self.target
+            case _:
+                raise ValueError("Unknown mapping location")
 
 
 def load_profile(path: Path) -> WikibaseMigrationProfile:

@@ -90,12 +90,20 @@ def migrate(
                     console.log("Aborting migration")
                     raise typer.Abort()
                 with rich_open(query_file, "rb") as file:
-                    query = file.read()
+                    query_str = file.read()
+            elif query:
+                query_str = query
+            else:
+                raise typer.BadParameter("If no items are given a query has to be provided")
             with progress:
                 query_task = progress.add_task("[green]Querying entities...", total=1, completed=1)
-                lod = Query.execute_query(query=query, endpoint_url=profile.source.sparql_url)
-                entity = [d.get(ITEM_QUERY_VARIABLE) for d in lod if d.get(ITEM_QUERY_VARIABLE, None)]
-                entity = [item.replace(profile.source.item_prefix.unicode_string(), "") for item in entity]
+                lod = Query.execute_query(query=query_str, endpoint_url=profile.source.sparql_url)
+                entities_with_prefix = [d.get(ITEM_QUERY_VARIABLE) for d in lod if d.get(ITEM_QUERY_VARIABLE, None)]
+                entity = [
+                    entity_id.replace(profile.source.item_prefix.unicode_string(), "")
+                    for entity_id in entities_with_prefix
+                    if entity_id is not None
+                ]
                 progress.update(query_task, completed=1)
         else:
             console.print(
@@ -113,7 +121,7 @@ def migrate(
         source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
         lod = Query.get_item_label(
             endpoint_url=profile.source.sparql_url,
-            item_ids=list(translations.get_mapping().keys()),
+            item_ids=translations.get_source_entity_ids(),
             item_prefix=profile.source.item_prefix,
         )
         source_labels = {label["qid"]: label.get("label") for label in lod}
@@ -122,7 +130,7 @@ def migrate(
         target_label_task = progress.add_task("[green]Querying target labels...", total=1, completed=1)
         lod = Query.get_item_label(
             endpoint_url=profile.target.sparql_url,
-            item_ids=list(translations.get_mapping().values()),
+            item_ids=translations.get_target_entity_ids(),
             item_prefix=profile.target.item_prefix,
         )
         target_labels = {label["qid"]: label.get("label") for label in lod}

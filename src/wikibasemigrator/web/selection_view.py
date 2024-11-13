@@ -28,6 +28,9 @@ class SelectionView:
         }
 
     def setup_ui(self):
+        """
+        setup ui
+        """
         with ui.element("div").classes("container mx-auto flex flex-col") as self.container:
             ui.label("Select Entities to migrate").classes("text-xl")
             with ui.element(tag="div") as self.controls_container:
@@ -38,9 +41,21 @@ class SelectionView:
             toggle2.bind_value(self, "selected_selector")
 
     def switch_selector(self, event: ValueChangeEventArguments) -> None:
+        """
+        Handle selector change event
+        :param event:
+        :return:
+        """
         self.switch_to_selector(event.value)
 
     def switch_to_selector(self, selector_id: int) -> None:
+        """
+        Swithc go given selector
+        :param selector_id: id of the selector to switch to
+        :return: None
+        """
+        if self.selection_container is None:
+            return
         selector = self.selectors[selector_id]
         self.selection_container.clear()
         with self.selection_container:

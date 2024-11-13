@@ -19,7 +19,7 @@ class WikibaseItemMapper:
         self.mappings: dict[str, str | None] = dict()
 
     def _get_wikibase_config_containing_mapping(self) -> WikibaseConfig:
-        config = self.migration_config.get_wikibase_config_by_name(self.migration_config.mapping.location_of_mapping)
+        config = self.migration_config.get_wikibase_config_of_mapping_location()
         return config
 
     def query_mappings_for(self, ids: list[str]):
@@ -39,10 +39,14 @@ class WikibaseItemMapper:
         for id_type, id_values, query_raw in ids_queries:
             if id_values:
                 query_template = Template(query_raw)
-                source_items = "\n".join([f'"{item}"' for item in id_values])
-                query = query_template.substitute(source_items=source_items)
+                source_items = [f'"{item}"' for item in id_values]
                 logger.debug(f"Querying {id_type} mappings for {len(id_values)} IDs")
-                lod = wikibase.Query.execute_query(query, self.wikibase_config.sparql_url)
+                lod = wikibase.Query.execute_values_query_in_chunks(
+                    query_template=query_template,
+                    param_name="source_items",
+                    values=source_items,
+                    endpoint_url=self.wikibase_config.sparql_url,
+                )
                 self._update_cache(lod)
 
     def query_mapping_for(self, item: str):
@@ -101,8 +105,8 @@ class WikibaseItemMapper:
     def is_cached(self, item: str) -> bool:
         return item in self.mappings
 
-    def get_applied_mappings(self) -> list[str]:
-        return [key for key, value in self.mappings.items() if value is not None]
+    def get_existing_mappings(self) -> dict[str, str]:
+        return {key: value for key, value in self.mappings.items() if value is not None}
 
     def get_missing_mappings(self) -> list[str]:
         return [key for key, value in self.mappings.items() if value is None]

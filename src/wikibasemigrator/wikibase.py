@@ -2,7 +2,9 @@ import hashlib
 import json
 import logging
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from string import Template
 
@@ -38,12 +40,19 @@ class Query:
         :param item_prefix:
         :return:
         """
+
+        def chunks(lst, n):
+            """Yield successive n-sized chunks from lst."""
+            for i in range(0, len(lst), n):
+                yield lst[i : i + n]
+
+        lod = []
         query_raw = Template("""
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         SELECT ?qid ?label
         WHERE{
           VALUES ?qid { 
-            $item_ids
+            $entity_ids
           }
           BIND(IRI(CONCAT("$item_prefix", STR( ?qid))) as ?wd_qid)
           ?wd_qid rdfs:label ?label. FILTER(lang(?label)="$language")
@@ -51,14 +60,61 @@ class Query:
         """)
         if language is None:
             language = "en"
-        source_items = "\n".join([f'"{item}"' for item in item_ids])
-        query = query_raw.substitute(item_ids=source_items, language=language, item_prefix=item_prefix)
-        logger.debug(f"Querying {len(item_ids)} labels from {endpoint_url}")
-        lod = cls.execute_query(query, endpoint_url=endpoint_url)
+        query_template = Template(query_raw.safe_substitute(language=language, item_prefix=item_prefix))
+        values = [f'"{item}"' for item in item_ids]
+        lod = cls.execute_values_query_in_chunks(
+            query_template=query_template,
+            param_name="entity_ids",
+            values=values,
+            endpoint_url=endpoint_url,
+        )
+        return lod
+
+    @classmethod
+    def chunks(cls, lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i : i + n]
+
+    @classmethod
+    def execute_values_query_in_chunks(
+        cls, query_template: Template, param_name: str, values: list[str], endpoint_url=HttpUrl, chunk_size: int = 1000
+    ):
+        """
+        Execute given query in chunks to speedup execution
+        :param chunk_size:
+        :param endpoint_url:
+        :param query_template:
+        :param param_name:
+        :param values:
+        :return:
+        """
+        lod = []
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = []
+            for item_id_chunk in cls.chunks(values, chunk_size):
+                source_items = "\n".join(item_id_chunk)
+                query = query_template.substitute(**{param_name: source_items})
+                logger.debug(f"Querying chunk of size {len(item_id_chunk)} labels from {endpoint_url}")
+                future = executor.submit(
+                    cls.execute_query,
+                    query=query,
+                    endpoint_url=endpoint_url,
+                )
+                futures.append(future)
+            for future in as_completed(futures):
+                lod_chunk = future.result()
+                lod.extend(lod_chunk)
         return lod
 
     @classmethod
     def execute_query(cls, query: str, endpoint_url: HttpUrl) -> list[dict]:
+        """
+        Execute given qquery against given endpoint
+        :param query:
+        :param endpoint_url:
+        :return:
+        """
         query_first_line = query.split("\n")[0][:30] if query.strip().startswith("#") else ""
         query_hash = hashlib.md5(query.encode("utf-8")).hexdigest()
         logger.debug(f"Executing SPARQL query {query_first_line} ({query_hash}) against {endpoint_url}")
@@ -69,7 +125,7 @@ class Query:
         resp = sparql.query().convert()
         lod_raw = resp.get("results", {}).get("bindings")
         logger.debug(
-            f"Query ({query_hash}) execution finished! execution time : {(datetime.now() - start).total_seconds()}s, No. results: {len(lod_raw)}"
+            f"Query ({query_hash}) execution finished! execution time : {(datetime.now() - start).total_seconds()}s, No. results: {len(lod_raw)}"  # noqa: E501
         )  # noqa: E501
         if logging.root.level <= logging.DEBUG:
             file_name = f"{start}_{query_hash}"
@@ -102,7 +158,8 @@ class Query:
     def save_query(cls, name: str, query: str, path: Path | None = None) -> None:
         """
         store the results as json file
-        :param lod:
+        :param query:
+        :param name:
         :param path:
         :return:
         """
@@ -154,3 +211,22 @@ class MediaWikiEndpoint:
             if code:
                 res[code] = label
         return res
+
+
+class WikibaseEntityTypes(str, Enum):
+    """
+    wikibaseintegrator entity types
+    """
+
+    BASE_ENTITY = "base-entity"
+    ITEM = "item"
+    PROPERTY = "property"
+    LEXEME = "lexeme"
+    MEDIAINFO = "mediainfo"
+
+    @classmethod
+    def support_sidelinks(cls) -> list["WikibaseEntityTypes"]:
+        """
+        Returns list of Wikibase types which support sidelinks
+        """
+        return [WikibaseEntityTypes.ITEM]

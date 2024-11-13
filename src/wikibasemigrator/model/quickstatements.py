@@ -8,23 +8,7 @@ from typing import Annotated, Literal, get_args
 from urllib.parse import quote
 
 from pydantic import BaseModel, Field
-
-__all__ = [
-    # Data model
-    "EntityQualifier",
-    "DateQualifier",
-    "TextQualifier",
-    "Qualifier",
-    "CreateLine",
-    "TextLine",
-    "EntityLine",
-    "DateLine",
-    "Line",
-    # Line renderers
-    "render_lines",
-    "lines_to_url",
-    "lines_to_new_tab",
-]
+from wikibaseintegrator.wbi_enums import WikibaseDatatype
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +26,7 @@ class Qualifier(BaseModel):
     A qualifier
     """
 
-    type: Literal["String"] = "String"
+    type: str = "String"
     predicate: str = _safe_field(regex=r"^!?[PQS]\d+$")
     target: str
 
@@ -203,7 +187,7 @@ class MonolingualTextQualifier(TextQualifier):
 
 
 class QuantityQualifier(Qualifier):
-    type: Literal["Text"] = "Quantity"
+    type: Literal["Quantity"] = "Quantity"
     unit: str | None = _safe_field(regex=r"^[Q]\d+$")
     tolerance: str | None = None
 
@@ -226,6 +210,17 @@ class CreateLine(BaseModel):
     def get_line(self, sep: str = "|") -> str:
         """Get the CREATE line."""
         return "CREATE"
+
+
+class CreatePropertyLine(BaseModel):
+    """A trivial model representing the CREATE line."""
+
+    datatype: WikibaseDatatype
+    type: Literal["Create"] = "Create"
+
+    def get_line(self, sep: str = "|") -> str:
+        """Get the CREATE line."""
+        return f"CREATE_PROPERTY{sep}{self.datatype.value}"
 
 
 class BaseLine(BaseModel):
@@ -294,7 +289,7 @@ class MonolingualTextLine(TextLine):
 
 
 class QuantityLine(BaseLine):
-    type: Literal["Text"] = "Quantity"
+    type: Literal["Quantity"] = "Quantity"
     target: str
     unit: str | None = _safe_field(regex=r"^[Q]\d+$")
     tolerance: str | None = None

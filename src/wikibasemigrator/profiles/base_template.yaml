@@ -1,0 +1,45 @@
+name: Name of the migration service
+description: |
+  Description of your migration service
+source:
+  name: Wikidata
+  sparql_url: https://query.wikidata.org/sparql
+  mediawiki_api_url: https://www.wikidata.org/w/api.php
+  mediawiki_rest_url: https://www.wikidata.org/w/rest.php
+  website: https://wikidata.org/
+  item_prefix: http://www.wikidata.org/entity/
+  user:
+  password:
+target:
+  name:
+  sparql_url:
+  mediawiki_api_url:
+  mediawiki_rest_url:
+  website:
+  quickstatement_url:
+  item_prefix:
+  user:
+  bot_password:
+  consumer_key:
+  tag:
+mapping:
+  location_of_mapping: target
+  item_mapping_query: |
+    PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
+    SELECT ?source_item ?target_item
+    WHERE{
+      # Add your Query here
+    }
+  property_mapping_query: |
+    PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
+    SELECT ?source_item ?target_item
+    WHERE{
+      # Add your query here
+    }
+back_reference:
+  item:
+    type:
+    id:
+  property:
+    type:
+    id:

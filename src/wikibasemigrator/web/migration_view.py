@@ -30,14 +30,17 @@ class MigrationView:
     def setup_ui(self):
         with ui.element("div").classes("container mx-auto flex flex-col") as self.container:
             ui.label("Migrating Entities").classes("text-xl")
-            with ui.element("div").classes("container flex flex-col") as self.migration_container:
+            with ui.element("div").classes("container flex flex-col gap-2") as self.migration_container:
                 ui.spinner()
 
     async def start_migration(self, translations: ItemSetTranslationResult, summary: str):
+        if self.migration_container is None:
+            logger.debug("Migration container has not been setup")
+            return
         ui.notify("Staring migration")
         self.migration_container.clear()
         with self.migration_container:
-            self.progress_bar = ProgressBar(total=len(translations.get_target_items()))
+            self.progress_bar = ProgressBar(total=len(translations.get_target_entities()))
             self.migration_log = ui.log(max_lines=10).classes("w-full h-90")
 
         migrated_entities = await run.io_bound(
@@ -46,9 +49,11 @@ class MigrationView:
             summary=summary,
             entity_done_callback=self._update_progress,
         )
-        ui.notify("Migration completed")
+        ui.notify("Migration completed", type="positive")
         self.migration_container.clear()
         with self.migration_container:
+            with ui.link(target="/"):
+                ui.button("Back to selection")
             self.display_entities(translations)
 
     def _update_progress(self, future: Future):
@@ -58,8 +63,13 @@ class MigrationView:
         :return:
         """
         result = future.result()
-        self.progress_bar.increment()
-        self.migration_log.push(f"Migrated entity: {result.created_entity.id}")
+        if self.progress_bar:
+            self.progress_bar.increment()
+        if self.migration_log:
+            if result.created_entity is None:
+                self.migration_log.push(f"Migration of entity {result.original_item.id} failed")
+            else:
+                self.migration_log.push(f"Migrated entity: {result.created_entity.id}")
 
     def display_entities(self, translations: ItemSetTranslationResult):
         """
@@ -68,20 +78,37 @@ class MigrationView:
         :return:
         """
         rows = []
+        rows_errors = []
         for translation in translations:
-            label = (
-                translation.created_entity.labels.get("en").value
-                if "en" in translation.created_entity.labels.values
-                else None
-            )
-            url = f"{self.profile.target.item_prefix}{translation.created_entity.id}"
-            rows.append(
-                {
-                    "id": translation.created_entity.id,
-                    "label": label,
-                    "link": f"""<a href="{url}">{url}</a>""",
-                }
-            )
+            if translation.created_entity is None:
+                logger.debug("created_entity is not defined for translation → skipping")
+                label = (
+                    translation.original_item.labels.get("en").value
+                    if "en" in translation.original_item.labels.values
+                    else None
+                )
+                url = f"{self.profile.source.item_prefix}{translation.original_item.id}"
+                rows_errors.append(
+                    {
+                        "link": f"""<a href="{url}" target="_blank">{translation.original_item.id} ({label})</a>""",
+                        "errors": str(translation.errors),
+                    }
+                )
+            else:
+                label = (
+                    translation.created_entity.labels.get("en").value
+                    if "en" in translation.created_entity.labels.values
+                    else None
+                )
+                url = f"{self.profile.target.item_prefix}{translation.created_entity.id}"
+                rows.append(
+                    {
+                        "id": translation.created_entity.id,
+                        "label": label,
+                        "link": f"""<a href="{url}" target="_blank">{url}</a>""",
+                    }
+                )
+        ui.label("Migrated Entities").classes("mx-auto")
         ui.aggrid(
             {
                 "columnDefs": [
@@ -93,5 +120,17 @@ class MigrationView:
             },
             html_columns=[2],
         )
+        if rows_errors:
+            ui.label("Failed Migrations").classes("mx-auto")
+            ui.aggrid(
+                {
+                    "columnDefs": [
+                        {"headerName": "Source", "field": "link"},
+                        {"headerName": "Error Messages", "field": "errors"},
+                    ],
+                    "rowData": rows_errors,
+                },
+                html_columns=[0],
+            )
         # ToDo: uncomment for darkmode support
         # grid.classes(add="ag-theme-alpine-auto-dark", remove="ag-theme-balham ag-theme-balham-dark")

@@ -5,11 +5,12 @@ from functools import partial
 from typing import Union
 
 from pydantic import HttpUrl
-from wikibaseintegrator.entities import ItemEntity
+from wikibaseintegrator.entities import ItemEntity, PropertyEntity
 from wikibaseintegrator.models import Qualifiers, References, Snak
 
 from wikibasemigrator.model.quickstatements import (
     CreateLine,
+    CreatePropertyLine,
     DateLine,
     DateQualifier,
     EntityLine,
@@ -22,6 +23,7 @@ from wikibasemigrator.model.quickstatements import (
     TextQualifier,
     render_lines,
 )
+from wikibasemigrator.wikibase import WikibaseEntityTypes
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +71,22 @@ class QuickStatementsGenerator:
         """
         generate quick statements
         """
-        lines: list[EntityLine | CreateLine | TextLine] = []
+        lines: list[EntityLine | CreateLine | TextLine | CreatePropertyLine] = []
         if item.id is None:
-            lines.append(CreateLine())
+            if isinstance(item, ItemEntity):
+                lines.append(CreateLine())
+            elif isinstance(item, PropertyEntity):
+                lines.append(CreatePropertyLine(datatype=item.datatype))
+            else:
+                logger.debug(f"Quickstatements does not support creation of entities of type {item.ETYPE}")
+                return ""
         lines.extend(self._get_label_lines(item))
         lines.extend(self._get_description_lines(item))
         lines.extend(self._get_aliases_lines(item))
-        lines.extend(self._get_sidelink_lines(item))
+        if item.ETYPE in WikibaseEntityTypes.support_sidelinks():
+            lines.extend(self._get_sidelink_lines(item))
         lines.extend(self._get_statement_lines(item))
+        # ToDo: ADD support for lexemes
         return render_lines(lines, newline=newline)
 
     def _get_item_subject(self, item: ItemEntity) -> str:
@@ -244,7 +254,7 @@ class QuickStatementsGenerator:
         elif datatype == "quantity":
             if not snak.datavalue:
                 logger.debug("Skipping qualifier with 'unknown value'")
-                return
+                return None
             amount = snak.datavalue["value"]["amount"]
             unit = snak.datavalue["value"]["unit"]
             if unit == "1":
@@ -255,5 +265,5 @@ class QuickStatementsGenerator:
             line = QuantityQualifier(predicate=property_id, target=amount, unit=unit, tolerance=tolerance)
         else:
             logger.debug(f"Skipping qualifier with datatype {datatype}")
-            return
+            return None
         return line

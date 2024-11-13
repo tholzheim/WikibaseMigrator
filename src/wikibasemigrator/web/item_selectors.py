@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
@@ -9,6 +10,8 @@ from nicegui.events import ValueChangeEventArguments
 
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.wikibase import Query
+
+logger = logging.getLogger(__name__)
 
 
 class WikibaseItemSelector(ABC):
@@ -52,8 +55,8 @@ class ItemSelectorElement(WikibaseItemSelector):
 
     def __init__(self, profile: WikibaseMigrationProfile, selection_callback: Callable[[list[str]], Awaitable[None]]):
         super().__init__(profile, selection_callback)
-        self.value = None
-        self.rows = []
+        self.value: str = ""
+        self.rows: list[dict] = []
         self.selection_display: ui.table | None = None
         self._worker: asyncio.Task | None = None
 
@@ -118,6 +121,9 @@ class ItemSelectorElement(WikibaseItemSelector):
         return bool(pattern.match(value))
 
     async def _handle_value_change(self, event: ValueChangeEventArguments) -> None:
+        if self.selection_display is None:
+            logger.debug("Selection display is not setup → Abort lookup and display of labels")
+            return
         if self.value and self._validate_value(self.value):
             if self._worker and not self._worker.done():
                 self._worker.cancel()
@@ -174,6 +180,13 @@ class QueryItemSelectorElement(WikibaseItemSelector):
             self.display_result()
 
     async def _handle_query(self) -> None:
+        """
+        handle query b< executing the query and displaying the result
+        :return:
+        """
+        if self.result_container is None:
+            logger.debug("Result container is not setup → aborting handling of query")
+            return
         self.result_container.clear()
         with self.result_container:
             ui.spinner(size="lg").classes("mx-auto")
@@ -193,16 +206,20 @@ class QueryItemSelectorElement(WikibaseItemSelector):
         """
         Get selected items
         """
-        item_ids: list[str] = [record.get(self.ITEM_QUERY_VARIABLE) for record in self.result]
-        item_ids = filter(lambda item: item is not None, item_ids)
-        item_ids = [item_id.removeprefix(self.profile.source.item_prefix.unicode_string()) for item_id in item_ids]
+        if self.result is None:
+            return []
+        item_ids_with_none: list[str | None] = [record.get(self.ITEM_QUERY_VARIABLE) for record in self.result]
+        item_ids_with_prefix: list[str] = [item_id for item_id in item_ids_with_none if item_id is not None]
+        item_ids = [
+            item_id.removeprefix(self.profile.source.item_prefix.unicode_string()) for item_id in item_ids_with_prefix
+        ]
         return item_ids
 
     def display_result(self) -> None:
         """
         display the result of the query
         """
-        if self.result:
+        if self.result and self.result_container is not None:
             self.result_container.clear()
             with self.result_container:
                 df = pd.DataFrame.from_records(self.result)
