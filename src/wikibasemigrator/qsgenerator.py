@@ -7,6 +7,7 @@ from typing import Union
 from pydantic import HttpUrl
 from wikibaseintegrator.entities import ItemEntity, PropertyEntity
 from wikibaseintegrator.models import Qualifiers, References, Snak
+from wikibaseintegrator.wbi_enums import WikibaseSnakType
 
 from wikibasemigrator.model.quickstatements import (
     CreateLine,
@@ -21,6 +22,7 @@ from wikibasemigrator.model.quickstatements import (
     QuantityQualifier,
     TextLine,
     TextQualifier,
+    TimeQualifier,
     render_lines,
 )
 from wikibasemigrator.wikibase import WikibaseEntityTypes
@@ -165,6 +167,8 @@ class QuickStatementsGenerator:
             qualifiers = self._get_statement_qualifiers(claim.qualifiers)
             references = self._get_statement_references(claim.references)
             qualifiers.extend(references)
+            if claim.mainsnak.snaktype is not WikibaseSnakType.KNOWN_VALUE:
+                continue
             if datatype == "wikibase-item":
                 line = EntityLine(
                     subject=subject,
@@ -182,8 +186,10 @@ class QuickStatementsGenerator:
             elif datatype == "time":
                 date_str = claim.mainsnak.datavalue["value"]["time"]
                 precision = claim.mainsnak.datavalue["value"]["precision"]
-                date = f"{date_str}/{precision}"
-                line = DateLine(subject=subject, predicate=predicate, target=date, qualifiers=qualifiers)
+                calendar = claim.mainsnak.datavalue["value"]["calendarmodel"]
+                line = DateLine(
+                    subject=subject, predicate=predicate, target=date_str, calendar=calendar, qualifiers=qualifiers
+                )
             elif datatype == "monolingualtext":
                 text = claim.mainsnak.datavalue["value"]["text"]
                 language = claim.mainsnak.datavalue["value"]["language"]
@@ -243,8 +249,8 @@ class QuickStatementsGenerator:
         elif datatype == "time":
             date_str = snak.datavalue["value"]["time"]
             precision = snak.datavalue["value"]["precision"]
-            date = f"{date_str}/{precision}"
-            line = DateQualifier(predicate=property_id, target=date)
+            calendar = snak.datavalue["value"]["calendarmodel"]
+            line = TimeQualifier(predicate=property_id, target=date_str, precision=precision, calendar=calendar)
         elif datatype == "wikibase-item":
             line = EntityQualifier(predicate=property_id, target=snak.datavalue["value"]["id"])
         elif datatype == "monolingualtext":

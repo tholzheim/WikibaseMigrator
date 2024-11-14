@@ -4,6 +4,7 @@ import datetime
 import logging
 import webbrowser
 from collections.abc import Iterable, Sequence
+from enum import Enum
 from typing import Annotated, Literal, get_args
 from urllib.parse import quote
 
@@ -19,6 +20,15 @@ def _safe_field(*, regex: str | None = None, **kwargs) -> Field:
     except TypeError:
         rv = Field(pattern=regex, **kwargs)
     return rv
+
+
+class CalendarModels(str, Enum):
+    """
+    Wikidata Calendar Models
+    """
+
+    JULIAN = "http://www.wikidata.org/entity/Q1985786"
+    GREGORIAN = "http://www.wikidata.org/entity/Q1985727"
 
 
 class Qualifier(BaseModel):
@@ -99,9 +109,16 @@ def format_date(
     return f"+{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}Z/{precision}"
 
 
-def prepare_date(target: str | datetime.datetime | datetime.date, *, precision: int | None = None) -> str:
+def prepare_date(
+    target: str | datetime.datetime | datetime.date, *, precision: int | None = None, calendar: str | None = None
+) -> str:
     """Prepare a date for quickstatements."""
     if isinstance(target, str):
+        precision_def = f"/{precision}" if precision else ""
+        if precision_def not in target:
+            target += precision_def
+        if calendar is not None and CalendarModels(calendar) is CalendarModels.JULIAN:
+            target += "/J"
         return target
     if not isinstance(target, datetime.datetime | datetime.date):
         raise TypeError
@@ -170,10 +187,11 @@ class TimeQualifier(DateQualifier):
     """A line whose target is a date/datetime."""
 
     precision: int | None = None
+    calendar: str | None = None
 
     def get_target(self) -> str:
         """Get the date literal line."""
-        return prepare_date(self.target, precision=self.precision)
+        return prepare_date(self.target, precision=self.precision, calendar=self.calendar)
 
 
 class MonolingualTextQualifier(TextQualifier):
@@ -311,10 +329,11 @@ class DateLine(BaseLine):
     type: Literal["Date"] = "Date"
     target: datetime.datetime | datetime.date | str
     precision: int | None = None
+    calendar: str | None = None
 
     def get_target(self) -> str:
         """Get the date literal line."""
-        return prepare_date(self.target, precision=self.precision)
+        return prepare_date(self.target, precision=self.precision, calendar=self.calendar)
 
 
 #: A union of the line types

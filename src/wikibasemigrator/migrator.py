@@ -1,8 +1,10 @@
+import json
 import logging
 from collections.abc import Callable, Generator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from functools import partial
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 from wikibaseintegrator import WikibaseIntegrator, datatypes, wbi_login
@@ -267,20 +269,20 @@ class WikibaseMigrator:
         :param wikibase_config:
         :return:
         """
-        if wikibase_config.consumer_key:
-            logger.debug(f"Using OAuth2 as authentication for {wikibase_config.name}")
-            login = wbi_login.OAuth2(
-                consumer_token=wikibase_config.consumer_key,
-                mediawiki_api_url=wikibase_config.mediawiki_api_url,
-                mediawiki_rest_url=wikibase_config.mediawiki_rest_url,
-                user_agent=get_default_user_agent(),
-            )
-        elif wikibase_config.bot_password:
+        if wikibase_config.bot_password:
             logger.debug(f"Using Bot password as authentication for {wikibase_config.name}")
             login = wbi_login.Login(
                 user=wikibase_config.user,
                 password=wikibase_config.bot_password,
                 mediawiki_api_url=wikibase_config.mediawiki_api_url,
+                user_agent=get_default_user_agent(),
+            )
+        elif wikibase_config.consumer_key:
+            logger.debug(f"Using OAuth2 as authentication for {wikibase_config.name}")
+            login = wbi_login.OAuth2(
+                consumer_token=wikibase_config.consumer_key,
+                mediawiki_api_url=wikibase_config.mediawiki_api_url,
+                mediawiki_rest_url=wikibase_config.mediawiki_rest_url,
                 user_agent=get_default_user_agent(),
             )
         elif wikibase_config.password:
@@ -546,8 +548,8 @@ class WikibaseMigrator:
                             before=snak.datavalue["value"]["before"],
                             after=snak.datavalue["value"]["after"],
                             precision=snak.datavalue["value"]["precision"],
-                            # calendar=snak.datavalue["value"]["calendar"],
-                            # ToDo: Needs to look up calendar item mapping but is currently not mapped
+                            # calendar does not need to be mapped
+                            calendarmodel=snak.datavalue["value"]["calendarmodel"],
                             timezone=snak.datavalue["value"]["timezone"],
                             snaktype=snak.snaktype,
                             **kwargs,
@@ -702,6 +704,12 @@ class WikibaseMigrator:
         :return: entity with the ID
         """
         try:
+            entity_json = entity.item.get_json()
+            if logger.level <= logging.DEBUG:
+                path = Path(f"/tmp/WikibaseMigrator/migrations/{datetime.now()}_{entity.original_item.id}.json")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with open(path, "w") as f:
+                    json.dump(entity_json, f)
             res = entity.item.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags, login=login)
             entity.created_entity = res
         except Exception as e:
