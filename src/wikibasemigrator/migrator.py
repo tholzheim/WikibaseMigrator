@@ -3,22 +3,22 @@ import logging
 from collections.abc import Callable, Generator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 from wikibaseintegrator import WikibaseIntegrator, datatypes, wbi_login
-from wikibaseintegrator.entities import ItemEntity, PropertyEntity
+from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntity, PropertyEntity
 from wikibaseintegrator.models import Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator.wbi_enums import WikibaseSnakType
 from wikibaseintegrator.wbi_exceptions import MissingEntityException, NonExistentEntityError
+from wikibaseintegrator.wbi_helpers import mediawiki_api_call_helper
 
 from wikibasemigrator import WbEntity
 from wikibasemigrator.exceptions import UnknownEntityTypeException
 from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
-from wikibasemigrator.wikibase import WikibaseEntityTypes, get_default_user_agent
+from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -225,14 +225,58 @@ class WikibaseMigrator:
         return self.get_items(item_ids, self.profile.target, self.target_wbi)
 
     def get_items(
-        self, item_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator
+        self, item_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator, max_workers: int = 10
     ) -> list[WbEntity]:
         # ToDo: WARNING:urllib3.connectionpool:Connection pool is full, [...] Connection pool size: 10  # noqa: E501
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            func = partial(WikibaseMigrator.get_item, wikibase_config=wikibase_config, wbi=wbi)
-            results_with_none = executor.map(func, item_ids)
-        result = [item for item in results_with_none if item is not None]
+        result: list[WbEntity] = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+            for chunk in Query.chunks(item_ids, 50):
+                future = executor.submit(self.get_entity_batch, entity_ids=chunk, wbi=wbi)
+                futures.append(future)
+            for future in as_completed(futures):
+                entity_chunk = future.result()
+                result.extend(entity_chunk)
+        logger.debug(len(result))
         return result
+
+    @staticmethod
+    def get_entity_batch(
+        entity_ids: list[str], wbi: WikibaseIntegrator, allow_anonymous: bool = True, **kwargs
+    ) -> list[WbEntity]:
+        """
+        Get entities in batches from the wikibase
+        :param entity_ids:
+        :return:
+        """
+        entity_ids_param = "|".join(entity_ids)
+        params = {"action": "wbgetentities", "ids": entity_ids_param, "format": "json"}
+
+        login = wbi.login
+        is_bot = wbi.is_bot
+        start = datetime.now()
+        lod = mediawiki_api_call_helper(
+            data=params, login=login, allow_anonymous=allow_anonymous, is_bot=is_bot, **kwargs
+        )
+        logger.debug(f"Querying entity batch of {len(entity_ids)} entities took {datetime.now() - start}")
+        if lod.get("success", False):
+            entities = []
+            for entity_id, record in lod.get("entities", {}).items():
+                if entity_id.startswith("Q"):
+                    entity = ItemEntity(api=wbi).from_json(record)
+                elif entity_id.startswith("P"):
+                    entity = PropertyEntity(api=wbi).from_json(record)
+                elif entity_id.startswith("L"):
+                    entity = LexemeEntity(api=wbi).from_json(record)
+                elif entity_id.startswith("M"):
+                    entity = MediaInfoEntity(api=wbi).from_json(record)
+                else:
+                    raise UnknownEntityTypeException(entity_id)
+                entities.append(entity)
+            return entities
+        else:
+            logger.error(f"Querying entity batches from Wikibase failed! {lod.get('warnings', '')}")
+            return []
 
     def get_item_from_source(self, qid: str) -> WbEntity | None:
         """
