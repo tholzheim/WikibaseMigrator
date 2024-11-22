@@ -1,6 +1,6 @@
 import unittest
 
-from wikibasemigrator.wikibase import WikibaseEntityTypes
+from wikibasemigrator.wikibase import Query, WikibaseEntityTypes
 
 
 class TestWikibaseEntityTypes(unittest.TestCase):
@@ -35,3 +35,11 @@ class TestWikibaseEntityTypes(unittest.TestCase):
         for entity_type in WikibaseEntityTypes:
             value = match_case_test(entity_type.value)
             self.assertEqual(value, entity_type)
+
+    def test_chunking(self):
+        """
+        test chunking
+        """
+        expected = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        for i, chunk in enumerate(Query.chunks([i for i in range(1, 10)], 3)):
+            self.assertEqual(chunk, expected[i])
