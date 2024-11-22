@@ -116,7 +116,7 @@ class Query:
         :return:
         """
         query_first_line = query.split("\n")[0][:30] if query.strip().startswith("#") else ""
-        query_hash = hashlib.md5(query.encode("utf-8")).hexdigest()
+        query_hash = hashlib.sha512(query.encode("utf-8")).hexdigest()
         logger.debug(f"Executing SPARQL query {query_first_line} ({query_hash}) against {endpoint_url}")
         start = datetime.now()
         sparql = SPARQLWrapper(endpoint_url.unicode_string(), agent=get_default_user_agent(), returnFormat=JSON)
