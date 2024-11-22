@@ -40,13 +40,6 @@ class Query:
         :param item_prefix:
         :return:
         """
-
-        def chunks(lst, n):
-            """Yield successive n-sized chunks from lst."""
-            for i in range(0, len(lst), n):
-                yield lst[i : i + n]
-
-        lod = []
         query_raw = Template("""
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         SELECT ?qid ?label
