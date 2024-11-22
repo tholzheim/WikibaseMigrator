@@ -65,6 +65,8 @@ class EntityMappingConfig(BaseModel):
     property_mapping_query: str
     languages: list[str] | None = None
     sidelinks: list[str] | None = None
+    ignore_no_value: bool = False
+    ignore_unknown_values: bool = False
 
 
 class EntityBackReferenceType(str, Enum):

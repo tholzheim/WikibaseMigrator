@@ -559,6 +559,10 @@ class WikibaseMigrator:
         :param kwargs: additional arguments to pass to the translated snak for example references and qualifiers
         :return: Translated snak
         """
+        if self.profile.mapping.ignore_unknown_values and snak.snaktype is WikibaseSnakType.UNKNOWN_VALUE:
+            return None
+        if self.profile.mapping.ignore_no_value and snak.snaktype is WikibaseSnakType.NO_VALUE:
+            return None
         new_property_number = self.mapper.get_mapping_for(snak.property_number)
         if new_property_number is None:
             translation_result.add_missing_property(snak.property_number)
