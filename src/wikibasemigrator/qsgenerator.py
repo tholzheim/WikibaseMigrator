@@ -35,12 +35,6 @@ class QuickStatementsGenerator:
     Generate quick statements based on a given ItemEntity
     """
 
-    # def __init__(self, item: ItemEntity):
-    #     """
-    #     constructor
-    #     """
-    #     self.item = item
-
     def get_qs_url(self, item: ItemEntity, url: HttpUrl) -> HttpUrl:
         """
         The QuickStatements API does not work as expected.
