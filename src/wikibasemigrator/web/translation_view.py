@@ -80,8 +80,9 @@ class TranslationView:
             logging.root.addHandler(handler)
         self.translation_result_container.update()
         logger.info(f"Start translation of {len(item_ids)} items...")
-        self.translations = await run.io_bound(self.migrator.translate_items_by_id, item_ids)
+        self.translations = await run.io_bound(self.migrator.translate_entities_by_id, item_ids)
         await self.fetch_labels()
+        logging.root.removeHandler(handler)
         logger.info("Displaying Translation result...")
         self.translation_result_container.clear()
         with ui.element("div").classes("container flex flex-col gap-2") as self.translation_result_container:
