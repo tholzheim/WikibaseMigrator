@@ -236,6 +236,9 @@ class QuickStatementsGenerator:
     def _convert_snak(
         self, snak: Snak, as_reference: bool = False, new_reference_group: bool = False
     ) -> Union[TextQualifier, DateQualifier, "QuantityQualifier", EntityQualifier, None]:
+        if snak.snaktype is not WikibaseSnakType.KNOWN_VALUE:
+            # other snaktypes are not supported by quick statements
+            return None
         property_id = snak.property_number
         if as_reference:
             property_id = property_id.replace("P", "S")
