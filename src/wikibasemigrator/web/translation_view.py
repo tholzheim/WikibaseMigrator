@@ -89,8 +89,9 @@ class TranslationView:
         logger.info("Displaying Translation result...")
         self.translation_result_container.clear()
         with ui.element("div").classes("container flex flex-col gap-2") as self.translation_result_container:
-            self.display_applied_mappings()
+            self.display_general_translation_overview()
             self.display_migration_controls()
+            self.display_applied_mappings()
             self.display_translation_item_viewer()
             self.display_missing_mappings()
             self.display_quickstatements()
@@ -309,8 +310,51 @@ class TranslationView:
                     "target": f"""<a href="{target_url}" target="_blank">{target_id} ({target_label})</a>""",
                 }
             )
+        with ui.expansion(text="Applied Mappings").classes("ring-2 rounded"):
+            with ui.element("div").classes("flex flex-col gap-2 w-full"):
+                ui.label(f"{len(mappings)} mappings applied")
+                ui.aggrid(
+                    {
+                        "columnDefs": [
+                            {"headerName": "Source", "field": "source"},
+                            {"headerName": "Target", "field": "target"},
+                        ],
+                        "rowData": rows,
+                    },
+                    html_columns=[0, 1],
+                )
+
+    def display_general_translation_overview(self):
+        """ "
+        display general translation overview
+        by showing a table of all source ids and the destination in the target (CREATE new item or merge with...)
+        """
+        rows = []
+        created_new_counter = 0
+        merge_counter = 0
+        for translation_result in self.translations:
+            source_id = translation_result.original_entity.id
+            target_id = translation_result.entity.id
+            source_label = self.source_labels.get(source_id, "")
+            source_url = f"{self.profile.source.item_prefix}{source_id}"
+            if target_id is None:
+                target = "Creating new entity"
+                created_new_counter += 1
+            else:
+                merge_counter += 1
+                target_label = self.target_labels.get(target_id, "")
+                target_url = f"{self.profile.target.item_prefix}{target_id}"
+                target = f"""Merging with <a href="{target_url}" target="_blank">{target_id} ({target_label})</a>"""
+            rows.append(
+                {
+                    "source": f"""<a href="{source_url}" target="_blank">{source_id} ({source_label})</a>""",
+                    "target": target,
+                }
+            )
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            ui.label(f"Applied Mapping {len(mappings)}").classes("text-xl mx-auto")
+            ui.label("Translation result").classes("text-xl mx-auto")
+            ui.label(f"Creating {created_new_counter} new entity entries")
+            ui.label(f"Merging {merge_counter} entities with existing entries")
             ui.aggrid(
                 {
                     "columnDefs": [
