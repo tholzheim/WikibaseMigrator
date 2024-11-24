@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from wikibaseintegrator import WikibaseIntegrator, datatypes, wbi_login
+from wikibaseintegrator.datatypes import BaseDataType
 from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntity, PropertyEntity
 from wikibaseintegrator.models import Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
@@ -490,6 +491,8 @@ class WikibaseMigrator:
             translation_result.add_missing_property(snak.property_number)
             return None
         new_snak = None
+        if snak.snaktype is not WikibaseSnakType.KNOWN_VALUE:
+            return BaseDataType(prop_nr=new_property_number, snaktype=snak.snaktype, **kwargs)
         match snak.datatype:
             case "string":
                 new_snak = datatypes.String(
@@ -502,7 +505,7 @@ class WikibaseMigrator:
             case "wikibase-item":
                 source_id = snak.datavalue.get("value", {}).get("id", None)
                 mapped_id = self.mapper.get_mapping_for(source_id) if source_id else None
-                if mapped_id or snak.snaktype != WikibaseSnakType.KNOWN_VALUE:
+                if mapped_id:
                     new_snak = datatypes.Item(
                         prop_nr=new_property_number, value=mapped_id, snaktype=snak.snaktype, **kwargs
                     )
@@ -510,26 +513,18 @@ class WikibaseMigrator:
                     translation_result.add_missing_item(snak.datavalue["value"]["id"])
                     new_snak = None
             case "time":
-                match snak.snaktype:
-                    case WikibaseSnakType.KNOWN_VALUE:
-                        new_snak = datatypes.Time(
-                            prop_nr=new_property_number,
-                            time=snak.datavalue["value"]["time"],
-                            before=snak.datavalue["value"]["before"],
-                            after=snak.datavalue["value"]["after"],
-                            precision=snak.datavalue["value"]["precision"],
-                            # calendar does not need to be mapped
-                            calendarmodel=snak.datavalue["value"]["calendarmodel"],
-                            timezone=snak.datavalue["value"]["timezone"],
-                            snaktype=snak.snaktype,
-                            **kwargs,
-                        )
-                    case _:
-                        new_snak = datatypes.Time(
-                            snaktype=snak.snaktype,
-                            **kwargs,
-                        )
-
+                new_snak = datatypes.Time(
+                    prop_nr=new_property_number,
+                    time=snak.datavalue["value"]["time"],
+                    before=snak.datavalue["value"]["before"],
+                    after=snak.datavalue["value"]["after"],
+                    precision=snak.datavalue["value"]["precision"],
+                    # calendar does not need to be mapped
+                    calendarmodel=snak.datavalue["value"]["calendarmodel"],
+                    timezone=snak.datavalue["value"]["timezone"],
+                    snaktype=snak.snaktype,
+                    **kwargs,
+                )
             case "commonsMedia":
                 new_snak = datatypes.CommonsMedia(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
