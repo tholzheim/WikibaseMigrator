@@ -20,7 +20,7 @@ target:
   user:
   password:
 mapping:
-  location_of_mapping: FactGrid
+  location_of_mapping: target
   item_mapping_query: |
     PREFIX schema: <http://schema.org/>
     SELECT ?source_item ?target_item
