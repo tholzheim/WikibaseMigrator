@@ -378,30 +378,63 @@ class WikibaseMigrator:
             logger.exception(e)
         return item
 
-    @staticmethod
-    def get_all_items_ids(item: WbEntity) -> list[str]:
+    @classmethod
+    def get_all_entity_ids(cls, entity: WbEntity) -> list[str]:
         """
-        Get all main items that are used in the given item either properties, property values, references.
+        Get all main entity IDs that are used in the given item either properties, property values, references.
         This does not include statement ids only proper Q and P ids
-        :param item: item to extract the ids from
+        :param entity: item to extract the ids from
         :return: List of used ids
         """
         ids = set()
-        ids.add(item.id)
-        for claim in item.claims:
+        ids.add(entity.id)
+        for claim in entity.claims:
             ids.add(claim.mainsnak.property_number)
-            if claim.mainsnak.datatype == "wikibase-item" and claim.mainsnak.snaktype is WikibaseSnakType.KNOWN_VALUE:
+            if cls._is_item_and_known_value(claim.mainsnak):
                 ids.add(claim.mainsnak.datavalue["value"]["id"])
-            for qualifier in claim.qualifiers:
-                ids.add(qualifier.property_number)
-                if qualifier.datatype == "wikibase-item" and qualifier.snaktype is WikibaseSnakType.KNOWN_VALUE:
-                    ids.add(qualifier.datavalue["value"]["id"])
-            for reference_block in claim.references:
-                for reference in reference_block.snaks:
-                    ids.add(reference.property_number)
-                    if reference.datatype == "wikibase-item":
-                        ids.add(reference.datavalue["value"]["id"])
+            ids_used_in_qualifiers = cls.get_all_entity_ids_from_qualifiers(claim.qualifiers)
+            ids.update(ids_used_in_qualifiers)
+            ids_used_in_references = cls.get_all_entity_ids_from_references(claim.references)
+            ids.update(ids_used_in_references)
         return list(ids)
+
+    @classmethod
+    def get_all_entity_ids_from_qualifiers(cls, qualifiers: Qualifiers) -> list[str]:
+        """
+        Get all entity ids used in the given qualifiers
+        :param qualifiers:
+        :return:
+        """
+        ids = set()
+        for qualifier in qualifiers:
+            ids.add(qualifier.property_number)
+            if cls._is_item_and_known_value(qualifier):
+                ids.add(qualifier.datavalue["value"]["id"])
+        return list(ids)
+
+    @classmethod
+    def get_all_entity_ids_from_references(cls, references: References) -> list[str]:
+        """
+        Get all entity ids used in the given references
+        :param references:
+        :return:
+        """
+        ids = set()
+        for reference_block in references:
+            for reference in reference_block.snaks:
+                ids.add(reference.property_number)
+                if cls._is_item_and_known_value(reference):
+                    ids.add(reference.datavalue["value"]["id"])
+        return list(ids)
+
+    @classmethod
+    def _is_item_and_known_value(cls, snak: Snak) -> bool:
+        """
+        Checks if the snak is a wikibase-item and is a known value
+        :param snak: snak to check
+        :return: bool
+        """
+        return snak.datatype == "wikibase-item" and snak.snaktype is WikibaseSnakType.KNOWN_VALUE
 
     def update_item(self, item: WbEntity) -> None:
         """
@@ -415,7 +448,7 @@ class WikibaseMigrator:
         :param item:
         :return:
         """
-        used_ids = self.get_all_items_ids(item)
+        used_ids = self.get_all_entity_ids(item)
         self.prepare_mapper_cache_by_ids(used_ids)
 
     def prepare_mapper_cache_by_ids(self, item_ids: list[str]):
@@ -433,7 +466,7 @@ class WikibaseMigrator:
         :param translation_result:
         :return:
         """
-        used_ids = self.get_all_items_ids(translation_result.original_item)
+        used_ids = self.get_all_entity_ids(translation_result.original_item)
         mappings = {source_id: self.mapper.get_mapping_for(source_id) for source_id in used_ids}
         translation_result.add_item_mappings(mappings)
 
