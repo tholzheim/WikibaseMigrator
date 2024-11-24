@@ -30,7 +30,7 @@ class TestWikibaseMigrator(unittest.TestCase):
         self.assertGreaterEqual(len(translation_result.missing_properties), 5)
         self.assertGreaterEqual(len(translation_result.missing_items), 2)
         qs_generator = QuickStatementsGenerator()
-        qs = qs_generator.generate_item(translation_result.item)
+        qs = qs_generator.generate_item(translation_result.entity)
         print(qs)
 
     def test_get_all_items_ids(self):

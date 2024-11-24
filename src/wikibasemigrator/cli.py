@@ -207,7 +207,7 @@ def migrate(
         raise typer.Abort()
     else:
         with Progress(*Progress.get_default_columns()) as progress:
-            migration_task = progress.add_task("[green]Migrating entities...", total=len(translations.items))
+            migration_task = progress.add_task("[green]Migrating entities...", total=len(translations.entities))
 
             def update_progress(future: Future):
                 """
@@ -227,7 +227,7 @@ def migrate(
         for translation in translations:
             if translation.created_entity is None:
                 console.log(
-                    f"Something went wrong migrating entity {translation.original_item.id} {translation.errors}"
+                    f"Something went wrong migrating entity {translation.original_entity.id} {translation.errors}"
                 )
                 continue
             label = (

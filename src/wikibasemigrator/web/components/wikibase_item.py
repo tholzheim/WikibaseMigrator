@@ -4,7 +4,7 @@ from pydantic import HttpUrl
 from wikibaseintegrator.models import Reference, Snak
 from wikibaseintegrator.wbi_enums import WikibaseSnakType
 
-from wikibasemigrator.migrator import ItemTranslationResult
+from wikibasemigrator.model.translations import EntityTranslationResult
 
 
 class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
@@ -14,7 +14,7 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
         target_url: str | HttpUrl,
         source_labels: dict[str, str] | None,
         target_labels: dict[str, str] | None,
-        translation_result: ItemTranslationResult | None = None,
+        translation_result: EntityTranslationResult | None = None,
         entity: dict | None = None,
     ) -> None:
         super().__init__()
@@ -26,20 +26,20 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
         self._props["target_labels"] = target_labels
         self._props["entity"] = entity
 
-    def _convert_to_translation_record(self, translation_result: ItemTranslationResult) -> dict:
+    def _convert_to_translation_record(self, translation_result: EntityTranslationResult) -> dict:
         """
         Conver the translation result to a translation record which can be rendered by the vue template
         :param translation_result:
         :return:
         """
-        item = translation_result.original_item
-        mappings = translation_result.item_mapping
+        item = translation_result.original_entity
+        mappings = translation_result.entity_mapping
         claims: dict[str, list] = {}
         for claim in item.claims:
             mainsnak = self._convert_snak(claim.mainsnak, mappings)
             qulifier_recors = []
             reference_records = []
-            for property_number, snaks in claim.qualifiers.qualifiers.items():
+            for property_number, snaks in claim.qualifiers.qualifiers.entities():
                 qualifier_record = {
                     "s_id": property_number,
                     "t_id": mappings.get(property_number, None),
@@ -49,7 +49,7 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
             reference_block: Reference
             for reference_block in claim.references:
                 block_records = []
-                for property_number, snaks in reference_block.snaks.snaks.items():
+                for property_number, snaks in reference_block.snaks.snaks.entities():
                     reference_record = {
                         "s_id": property_number,
                         "t_id": mappings.get(property_number, None),
@@ -73,11 +73,11 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
         entity_record = {
             "s_id": item.id,
             "t_id": mappings.get(item.id, None),
-            "labels": {label.language: label.value for label in translation_result.item.labels},
-            "descriptions": {desc.language: desc.value for desc in translation_result.item.descriptions},
+            "labels": {label.language: label.value for label in translation_result.entity.labels},
+            "descriptions": {desc.language: desc.value for desc in translation_result.entity.descriptions},
             "aliases": {
                 language: [alias.value for alias in aliases]
-                for language, aliases in translation_result.item.aliases.aliases.items()
+                for language, aliases in translation_result.entity.aliases.aliases.entities()
             },
             "claims": claim_records,
         }

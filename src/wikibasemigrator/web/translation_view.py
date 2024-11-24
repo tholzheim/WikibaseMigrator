@@ -5,7 +5,8 @@ from pathlib import Path
 
 from nicegui import run, ui
 
-from wikibasemigrator.migrator import ItemSetTranslationResult, WikibaseMigrator
+from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.qsgenerator import QuickStatementsGenerator
 from wikibasemigrator.web.components.code import Code
 from wikibasemigrator.web.components.wikibase_item import TranslatedWikibaseItemWidget
@@ -41,14 +42,16 @@ class TranslationView:
     """
 
     def __init__(
-        self, migrator: WikibaseMigrator, migration_callback: Callable[[ItemSetTranslationResult, str], Awaitable[None]]
+        self,
+        migrator: WikibaseMigrator,
+        migration_callback: Callable[[EntitySetTranslationResult, str], Awaitable[None]],
     ) -> None:
         self.migrator = migrator
         self.profile = self.migrator.profile
         self.migration_callback = migration_callback
         self.container: ui.element | None = None
         self.translation_result_container: ui.element | None = None
-        self.translations: ItemSetTranslationResult | None = None
+        self.translations: EntitySetTranslationResult | None = None
         self.source_labels: dict[str, str] | None = None
         self.target_labels: dict[str, str] | None = None
         self.summary = ""
@@ -217,7 +220,7 @@ class TranslationView:
         handle migration button event
         :return:
         """
-        if not self.translations.items:
+        if not self.translations.entities:
             ui.notify("No entities to migrate. (Selected entities might already exist)", type="warning")
         elif not self.summary:
             ui.notify("Please provide a summary for the migration", type="warning")

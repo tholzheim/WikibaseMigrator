@@ -5,8 +5,9 @@ from nicegui import app, ui
 
 from wikibasemigrator import __version__
 from wikibasemigrator.exceptions import UserLoginRequiredException
-from wikibasemigrator.migrator import ItemSetTranslationResult, WikibaseMigrator
+from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
+from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.migration_view import MigrationView
 from wikibasemigrator.web.selection_view import SelectionView
@@ -118,7 +119,7 @@ class WikibaseControllerPage:
             self.translation_view.setup_ui()
             await self.translation_view.translate(selected_items)
 
-    async def load_migration_view(self, translations: ItemSetTranslationResult, summary: str):
+    async def load_migration_view(self, translations: EntitySetTranslationResult, summary: str):
         """
         load migration view and start migration of the given translations
         :param translations:

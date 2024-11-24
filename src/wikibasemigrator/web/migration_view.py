@@ -3,7 +3,8 @@ from concurrent.futures import Future
 
 from nicegui import run, ui
 
-from wikibasemigrator.migrator import ItemSetTranslationResult, WikibaseMigrator
+from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.web.components.progress import ProgressBar
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class MigrationView:
             with ui.element("div").classes("container flex flex-col gap-2") as self.migration_container:
                 ui.spinner()
 
-    async def start_migration(self, translations: ItemSetTranslationResult, summary: str):
+    async def start_migration(self, translations: EntitySetTranslationResult, summary: str):
         if self.migration_container is None:
             logger.debug("Migration container has not been setup")
             return
@@ -67,11 +68,11 @@ class MigrationView:
             self.progress_bar.increment()
         if self.migration_log:
             if result.created_entity is None:
-                self.migration_log.push(f"Migration of entity {result.original_item.id} failed")
+                self.migration_log.push(f"Migration of entity {result.original_entity.id} failed")
             else:
                 self.migration_log.push(f"Migrated entity: {result.created_entity.id}")
 
-    def display_entities(self, translations: ItemSetTranslationResult):
+    def display_entities(self, translations: EntitySetTranslationResult):
         """
         Display the given entities as table
         :param entities:
@@ -83,14 +84,14 @@ class MigrationView:
             if translation.created_entity is None:
                 logger.debug("created_entity is not defined for translation → skipping")
                 label = (
-                    translation.original_item.labels.get("en").value
-                    if "en" in translation.original_item.labels.values
+                    translation.original_entity.labels.get("en").value
+                    if "en" in translation.original_entity.labels.values
                     else None
                 )
-                url = f"{self.profile.source.item_prefix}{translation.original_item.id}"
+                url = f"{self.profile.source.item_prefix}{translation.original_entity.id}"
                 rows_errors.append(
                     {
-                        "link": f"""<a href="{url}" target="_blank">{translation.original_item.id} ({label})</a>""",
+                        "link": f"""<a href="{url}" target="_blank">{translation.original_entity.id} ({label})</a>""",
                         "errors": str(translation.errors),
                     }
                 )

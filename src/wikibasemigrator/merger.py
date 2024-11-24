@@ -68,7 +68,7 @@ class EntityMerger:
         :param target:
         :return:
         """
-        for language, aliases in source.aliases.aliases.items():
+        for language, aliases in source.aliases.aliases.entities():
             values = [alias.value for alias in aliases]
             target.aliases.set(language=language, values=values, action_if_exists=ActionIfExists.APPEND_OR_REPLACE)
 
