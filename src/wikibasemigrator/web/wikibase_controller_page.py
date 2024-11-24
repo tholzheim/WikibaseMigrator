@@ -1,12 +1,13 @@
 import logging
 from pathlib import Path
 
-from nicegui import ui
+from nicegui import app, ui
 
 from wikibasemigrator import __version__
+from wikibasemigrator.exceptions import UserLoginRequiredException
 from wikibasemigrator.migrator import ItemSetTranslationResult, WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
-from wikibasemigrator.oauth import OAuth
+from wikibasemigrator.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.migration_view import MigrationView
 from wikibasemigrator.web.selection_view import SelectionView
 from wikibasemigrator.web.translation_view import TranslationView
@@ -26,8 +27,10 @@ class WikibaseControllerPage:
         self,
         profile: WikibaseMigrationProfile,
         icon_path: Path | None = None,
+        user: MediaWikiUserIdentity | None = None,
     ):
         self.profile = profile
+        self.user = user
         self.icon_path = icon_path
         self.migrator = WikibaseMigrator(self.profile)
         self.selection_view = SelectionView(self.profile, self.load_translator)
@@ -38,15 +41,15 @@ class WikibaseControllerPage:
 
     def setup_ui(self) -> None:
         with ui.header().classes(replace="row items-center") as header:
-            header.classes("bg-white dark:bg-slate-800 border-2")
+            header.classes("bg-white dark:bg-slate-800 border-2 gap-2 flex flex-row p-2")
             self.display_page_icon()
-            oauth_login_url = OAuth.get_authorize_url(
-                consumer_key=self.profile.target.consumer_key,
-                mediawiki_rest_url=self.profile.target.mediawiki_rest_url,
-                callback_url="http://localhost:8009/oauth_callback",
-            )
-            with ui.link(target=oauth_login_url):
-                ui.button(icon="login", text="Login").props("flat")
+            ui.element("div").classes("grow")
+            if self.user:
+                ui.button(self.user.username, on_click=self.logout).tooltip("Click to logout")
+            else:
+                oauth_login_url = "/login/wiki"
+                with ui.link(target=oauth_login_url):
+                    ui.button(icon="login", text="Login").props("flat")
 
         with ui.footer() as footer:
             with ui.element("div").classes("mx-auto"):
@@ -61,7 +64,26 @@ class WikibaseControllerPage:
 
             self.view_container = ui.element(tag="div").classes("container h-full")
             with self.view_container:
-                self.selection_view.setup_ui()
+                if self.requires_login():
+                    ui.notification(
+                        timeout=None, type="info", message="Please login to migrate entities", position="center"
+                    )
+                else:
+                    self.selection_view.setup_ui()
+
+    def requires_login(self) -> bool:
+        """
+        Check if user login is required
+        """
+        try:
+            self.migrator.get_wikibase_login(self.profile.target)
+            return False
+        except UserLoginRequiredException:
+            return True
+
+    def logout(self):
+        app.storage.user["token"] = None
+        ui.navigate.to("/", new_tab=False)
 
     def display_page_icon(self):
         """

@@ -13,7 +13,3 @@ class TestWikibaseItemMapper(unittest.TestCase):
         mapping = mapper.get_mapping_for("Q183")
         self.assertEqual("Q140530", mapping)
         self.assertEqual("P2", mapper.get_mapping_for("P31"))
-
-
-if __name__ == "__main__":
-    unittest.main()

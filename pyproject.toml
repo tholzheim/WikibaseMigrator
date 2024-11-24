@@ -23,7 +23,8 @@ dependencies = [
     "nicegui",
     "pandas",
     "SPARQLWrapper",
-    "Pygments"
+    "Pygments",
+    "Authlib"
 ]
 
 requires-python = ">=3.10"
@@ -55,6 +56,7 @@ test = [
     "pytest-cov",
     "ruff",
     "mypy",
+    "deepdiff"
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -120,8 +122,7 @@ legacy_tox_ini = """
     deps =
         .[test]
     commands =
-        pytest --cov --cov-append {tty:--color=yes} {posargs}
-        coverage xml
+        pytest --cov --cov-report=xml:coverage-reports/coverage.xml --cov-config=pyproject.toml --cov-branch {tty:--color=yes} {posargs}
 
     [testenv:format]
     description = install ruff and format the project code
@@ -159,6 +160,9 @@ minversion = "6.0"
 testpaths = [
     "tests",
 ]
+pythonpath = [
+  "src"
+]
 
 [tool.datamodel-codegen]
 field-constraints = true
@@ -169,3 +173,10 @@ target-python-version = "3.10"
 [tool.black]
 skip-string-normalization = true
 line-length = 120
+
+[tool.coverage.run]
+source = ["wikibasemigrator"]
+omit = ["tests/../*.py", "*/*wikibasemigrator/web/**/*.py"]
+
+
+

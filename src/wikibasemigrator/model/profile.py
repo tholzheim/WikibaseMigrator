@@ -10,6 +10,16 @@ from wikibasemigrator.wikibase import MediaWikiEndpoint
 logger = logging.getLogger(__name__)
 
 
+class UserToken(BaseModel):
+    """
+    Wikibase user access token
+    """
+
+    oauth_token: str
+    oauth_token_secret: str
+    oauth_callback_confirmed: bool
+
+
 class WikibaseConfig(BaseModel):
     """
     configuration for a wikibase api
@@ -27,6 +37,8 @@ class WikibaseConfig(BaseModel):
     password: str | None = None
     bot_password: str | None = None
     consumer_key: str | None = None
+    consumer_secret: str | None = None
+    user_token: UserToken | None = None
     tag: str | None = None
 
     def __post_init__(self):

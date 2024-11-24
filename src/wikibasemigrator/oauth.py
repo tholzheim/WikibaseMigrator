@@ -5,7 +5,7 @@ import re
 
 import requests
 from nicegui import app
-from pydantic import HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 
 class OAuth:
@@ -91,3 +91,25 @@ class OAuth:
         :return:
         """
         app.storage.user["code_verifier"] = code_verifier
+
+
+class MediaWikiUserIdentity(BaseModel):
+    """
+    mediawiki user information
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    iss: HttpUrl
+    aud: str
+    exp: int
+    iat: int
+    sub: int
+    username: str
+    editcount: int
+    confirmed_email: bool
+    registered: int
+    groups: list[str]
+    rights: list[str]
+    grants: list[str]
+    nonce: str

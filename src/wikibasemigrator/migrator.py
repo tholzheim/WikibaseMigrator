@@ -15,7 +15,7 @@ from wikibaseintegrator.wbi_exceptions import MissingEntityException, NonExisten
 from wikibaseintegrator.wbi_helpers import mediawiki_api_call_helper
 
 from wikibasemigrator import WbEntity
-from wikibasemigrator.exceptions import UnknownEntityTypeException
+from wikibasemigrator.exceptions import UnknownEntityTypeException, UserLoginRequiredException
 from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
@@ -322,9 +322,19 @@ class WikibaseMigrator:
                 user_agent=get_default_user_agent(),
             )
         elif wikibase_config.consumer_key:
-            logger.debug(f"Using OAuth2 as authentication for {wikibase_config.name}")
-            login = wbi_login.OAuth2(
+            logger.debug(f"Using OAuth1 as authentication for {wikibase_config.name}")
+            access_token = None
+            access_secret = None
+            if wikibase_config.user_token is not None:
+                access_token = wikibase_config.user_token.oauth_token
+                access_secret = wikibase_config.user_token.oauth_token_secret
+            if access_token is None or access_secret is None:
+                raise UserLoginRequiredException()
+            login = wbi_login.OAuth1(
                 consumer_token=wikibase_config.consumer_key,
+                consumer_secret=wikibase_config.consumer_secret,
+                access_token=access_token,
+                access_secret=access_secret,
                 mediawiki_api_url=wikibase_config.mediawiki_api_url,
                 mediawiki_rest_url=wikibase_config.mediawiki_rest_url,
                 user_agent=get_default_user_agent(),
