@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
 from wikibasemigrator.model.profile import UserToken, load_profile
-from wikibasemigrator.oauth import MediaWikiUserIdentity
+from wikibasemigrator.web.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.wikibase_controller_page import WikibaseControllerPage
 
 DEFAULT_ICON_PATH = Path(__file__).parent.joinpath("../resources/logo.svg")

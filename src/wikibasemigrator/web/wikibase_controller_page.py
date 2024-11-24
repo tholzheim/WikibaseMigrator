@@ -8,8 +8,8 @@ from wikibasemigrator.exceptions import UserLoginRequiredException
 from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult
-from wikibasemigrator.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.migration_view import MigrationView
+from wikibasemigrator.web.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.selection_view import SelectionView
 from wikibasemigrator.web.translation_view import TranslationView
 
