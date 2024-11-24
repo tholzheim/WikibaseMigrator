@@ -182,7 +182,12 @@ class QuickStatementsGenerator:
                 precision = claim.mainsnak.datavalue["value"]["precision"]
                 calendar = claim.mainsnak.datavalue["value"]["calendarmodel"]
                 line = DateLine(
-                    subject=subject, predicate=predicate, target=date_str, calendar=calendar, qualifiers=qualifiers
+                    subject=subject,
+                    predicate=predicate,
+                    target=date_str,
+                    calendar=calendar,
+                    qualifiers=qualifiers,
+                    precision=precision,
                 )
             elif datatype == "monolingualtext":
                 text = claim.mainsnak.datavalue["value"]["text"]
