@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from nicegui import native
 from rich import get_console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.progress import open as rich_open
@@ -10,12 +11,15 @@ from rich.table import Table
 
 from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile, load_profile
+from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
 from wikibasemigrator.wikibase import Query
 
 app = typer.Typer()
 console = get_console()
 DEFAULT_PROFILE_PATH = Path().home().joinpath(".config/WikibaseMigrator/profiles")
 ITEM_QUERY_VARIABLE = "item"
+
+STYLE_ERROR_MSG = "bold red"
 
 
 def complete_profile_paths(incomplete: str):
@@ -36,6 +40,26 @@ def get_profile_path(name: str) -> Path:
     :return: path of the profile
     """
     return DEFAULT_PROFILE_PATH.joinpath(name)
+
+
+@app.command(
+    name="app",
+)
+def webserver_app(
+    config: Annotated[
+        str,
+        typer.Option(help="The configuration file defining the Wikibases", autocompletion=complete_profile_paths),
+    ],
+):
+    """
+    Run the WikibaseMigrator web server as local app
+    Note: Experimental feature as some of the imported resources are not localized yet
+    """
+    profile_path = get_profile_path(config)
+    webserver = Webserver(profile_path, icon_path=DEFAULT_ICON_PATH)
+    webserver.run(
+        native=True, window_size=(1920, 1080), fullscreen=False, port=native.find_open_port(), frameless=False
+    )
 
 
 @app.command()
@@ -61,14 +85,6 @@ def migrate(
 ):
     """
     Migrate the provided entities
-    :param config:
-    :param summary:
-    :param entity:
-    :param query:
-    :param query_file:
-    :param show_details:
-    :param force:
-    :return:
     """
     progress = Progress(
         SpinnerColumn(),
@@ -77,7 +93,7 @@ def migrate(
     )
     profile_path = get_profile_path(config)
     if not profile_path.exists():
-        console.print(f"Profile {profile_path} not found", style="bold red")
+        console.print(f"Profile {profile_path} not found", style=STYLE_ERROR_MSG)
         raise typer.Abort()
     profile: WikibaseMigrationProfile = load_profile(profile_path)
     console.print(f"Loaded profile: {profile.name}")
@@ -86,7 +102,7 @@ def migrate(
         if query or query_file:
             if query_file:
                 if not query_file.exists():
-                    console.print(f"Provided query file {query_file} does not exist", style="bold red")
+                    console.print(f"Provided query file {query_file} does not exist", style=STYLE_ERROR_MSG)
                     console.log("Aborting migration")
                     raise typer.Abort()
                 with rich_open(query_file, "rb") as file:
@@ -107,7 +123,8 @@ def migrate(
                 progress.update(query_task, completed=1)
         else:
             console.print(
-                "No items to migrate. Please provide a list of entity IDs, a query or a query file", style="bold red"
+                "No items to migrate. Please provide a list of entity IDs, a query or a query file",
+                style=STYLE_ERROR_MSG,
             )
             console.log("Aborting migration")
             raise typer.Abort()
