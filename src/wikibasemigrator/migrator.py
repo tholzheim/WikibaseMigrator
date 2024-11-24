@@ -17,6 +17,7 @@ from wikibaseintegrator.wbi_helpers import mediawiki_api_call_helper
 from wikibasemigrator import WbEntity
 from wikibasemigrator.exceptions import UnknownEntityTypeException, UserLoginRequiredException
 from wikibasemigrator.mapper import WikibaseItemMapper
+from wikibasemigrator.merger import EntityMerger
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
 
@@ -171,7 +172,7 @@ class ItemSetTranslationResult(BaseModel):
         """
         Get IDs of all target entities that are used
         """
-        return [entity_id for entity_id in self.get_mapping().values()]
+        return [entity_id for entity_id in self.get_mapping().values() if entity_id is not None]
 
     def get_source_root_entity_ids(self):
         """
@@ -232,7 +233,9 @@ class WikibaseMigrator:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for chunk in Query.chunks(item_ids, 50):
-                future = executor.submit(self.get_entity_batch, entity_ids=chunk, wbi=wbi)
+                future = executor.submit(
+                    self.get_entity_batch, entity_ids=chunk, wbi=wbi, wikibase_config=wikibase_config
+                )
                 futures.append(future)
             for future in as_completed(futures):
                 entity_chunk = future.result()
@@ -242,7 +245,7 @@ class WikibaseMigrator:
 
     @staticmethod
     def get_entity_batch(
-        entity_ids: list[str], wbi: WikibaseIntegrator, allow_anonymous: bool = True, **kwargs
+        entity_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator, **kwargs
     ) -> list[WbEntity]:
         """
         Get entities in batches from the wikibase
@@ -253,10 +256,16 @@ class WikibaseMigrator:
         params = {"action": "wbgetentities", "ids": entity_ids_param, "format": "json"}
 
         login = wbi.login
+        allow_anonymous = login is None
         is_bot = wbi.is_bot
         start = datetime.now()
         lod = mediawiki_api_call_helper(
-            data=params, login=login, allow_anonymous=allow_anonymous, is_bot=is_bot, **kwargs
+            mediawiki_api_url=wikibase_config.mediawiki_api_url,
+            data=params,
+            login=login,
+            allow_anonymous=allow_anonymous,
+            is_bot=is_bot,
+            **kwargs,
         )
         logger.debug(f"Querying entity batch of {len(entity_ids)} entities took {datetime.now() - start}")
         if lod.get("success", False):
@@ -480,22 +489,60 @@ class WikibaseMigrator:
         mappings = {source_id: self.mapper.get_mapping_for(source_id) for source_id in used_ids}
         translation_result.add_item_mappings(mappings)
 
-    def translate_items_by_id(self, item_ids: list[str]) -> ItemSetTranslationResult:
+    def translate_entities_by_id(
+        self, item_ids: list[str], merge_existing_entities: bool = True
+    ) -> ItemSetTranslationResult:
         """
         Translate the items corresponding to the given item_ids
-        :param item_ids:
+        :param item_ids: entity ids to translate
+        :param merge_existing_entities If True existing entities are merged. Otherwise, existing entities are ignored
         :return:
         """
-        items = self.get_items_from_source(item_ids)
+        entities = self.get_items_from_source(item_ids)
         used_ids = set()
-        for item in items:
-            used_ids.update(self.get_all_items_ids(item))
+        for item in entities:
+            used_ids.update(self.get_all_entity_ids(item))
         self.prepare_mapper_cache_by_ids(list(used_ids))
-        # ToDo: Handle already exisitng entites in target wiki properly
-        items = [item for item in items if self.mapper.get_mapping_for(item.id) is None]
+        if not merge_existing_entities:
+            entities = [entity for entity in entities if self.mapper.get_mapping_for(entity.id) is None]
+        translated_entities = [self.translate_item(entity) for entity in entities]
+        translation_results = ItemSetTranslationResult.from_list(translated_entities)
+        if merge_existing_entities:
+            self.merge_existing_entities(translation_results)
+        return translation_results
 
-        translated_items = [self.translate_item(item) for item in items]
-        return ItemSetTranslationResult.from_list(translated_items)
+    def merge_existing_entities(self, translated_entities: ItemSetTranslationResult):
+        """
+        Merge existing entities with the translated entity
+        :param translated_entities:
+        :return:
+        """
+        entities_to_merge = [
+            entity for entity in translated_entities if self.mapper.get_mapping_for(entity.original_item.id) is not None
+        ]
+
+        source_existing_entity_ids = [entity.original_item.id for entity in entities_to_merge]
+        merge_mapping = {
+            source: target
+            for source, target in self.mapper.get_existing_mappings().items()
+            if source in source_existing_entity_ids
+        }
+        target_entities = self.get_items_from_target(list(merge_mapping.values()))
+        target_entities_by_id = {entity.id: entity for entity in target_entities}
+        merger = EntityMerger()
+        for translated_entity in entities_to_merge:
+            target_entity_id = merge_mapping.get(translated_entity.original_item.id)
+            target_entity = target_entities_by_id.get(target_entity_id)
+            if target_entity is None:
+                logger.error(
+                    f"Entity {translated_entity.original_item.id} expected to be merged with {target_entity_id} but the entity was not found"  # noqa: E501
+                )
+                continue
+
+            logger.debug(f"Merging {translated_entity.original_item.id} into {target_entity_id}")
+            merged_item = merger.merge(translated_entity.item, target_entity)
+            if merged_item is not None:
+                translated_entity.item = merged_item
 
     def translate_item(
         self,

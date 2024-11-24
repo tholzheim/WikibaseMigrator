@@ -132,7 +132,7 @@ def migrate(
     with progress:
         translation_task = progress.add_task("[green]Translating entities...", total=1, completed=1)
         migrator = WikibaseMigrator(profile)
-        translations = migrator.translate_items_by_id(entity)
+        translations = migrator.translate_entities_by_id(entity)
         progress.update(translation_task, completed=1)
     with progress:
         source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
