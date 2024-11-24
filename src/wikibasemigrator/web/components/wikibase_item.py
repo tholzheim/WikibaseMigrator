@@ -39,7 +39,7 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
             mainsnak = self._convert_snak(claim.mainsnak, mappings)
             qulifier_recors = []
             reference_records = []
-            for property_number, snaks in claim.qualifiers.qualifiers.entities():
+            for property_number, snaks in claim.qualifiers.qualifiers.items():
                 qualifier_record = {
                     "s_id": property_number,
                     "t_id": mappings.get(property_number, None),
@@ -49,7 +49,7 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
             reference_block: Reference
             for reference_block in claim.references:
                 block_records = []
-                for property_number, snaks in reference_block.snaks.snaks.entities():
+                for property_number, snaks in reference_block.snaks.snaks.items():
                     reference_record = {
                         "s_id": property_number,
                         "t_id": mappings.get(property_number, None),
@@ -77,7 +77,7 @@ class TranslatedWikibaseItemWidget(Element, component="wikibase_item.js"):
             "descriptions": {desc.language: desc.value for desc in translation_result.entity.descriptions},
             "aliases": {
                 language: [alias.value for alias in aliases]
-                for language, aliases in translation_result.entity.aliases.aliases.entities()
+                for language, aliases in translation_result.entity.aliases.aliases.items()
             },
             "claims": claim_records,
         }

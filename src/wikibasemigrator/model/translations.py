@@ -76,8 +76,8 @@ class EntitySetTranslationResult(BaseModel):
         :return: list of missing properties
         """
         missing = set()
-        for item in self.entities.values():
-            missing.update(item.missing_properties)
+        for entity in self.entities.values():
+            missing.update(entity.missing_properties)
         return list(missing)
 
     def get_missing_items(self) -> list[str]:
@@ -85,8 +85,8 @@ class EntitySetTranslationResult(BaseModel):
         Get IDs of missing item
         """
         missing = set()
-        for item in self.entities.values():
-            missing.update(item.missing_items)
+        for entity in self.entities.values():
+            missing.update(entity.missing_items)
         return list(missing)
 
     def get_mapping(self) -> dict[str, str | None]:
@@ -95,8 +95,8 @@ class EntitySetTranslationResult(BaseModel):
         :return:
         """
         mapping = dict()
-        for item in self.entities.values():
-            mapping.update(item.entity_mapping)
+        for entity in self.entities.values():
+            mapping.update(entity.entity_mapping)
         return mapping
 
     def get_existing_mappings(self) -> dict[str, str]:

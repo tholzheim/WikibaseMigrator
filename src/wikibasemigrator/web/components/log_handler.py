@@ -39,7 +39,7 @@ async def update_log():
 
 async def progress_test():
     total = 0
-    for value in track(range(100), description="Processing...", console=console, auto_refresh=True):
+    for _ in track(range(100), description="Processing...", console=console, auto_refresh=True):
         # Fake processing time
         time.sleep(0.1)
         total += 1

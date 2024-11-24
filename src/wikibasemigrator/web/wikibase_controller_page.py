@@ -52,7 +52,7 @@ class WikibaseControllerPage:
                 with ui.link(target=oauth_login_url):
                     ui.button(icon="login", text="Login").props("flat")
 
-        with ui.footer() as footer:
+        with ui.footer():
             with ui.element("div").classes("mx-auto"):
                 ui.label(f"WikibaseMigrator {__version__}")
 

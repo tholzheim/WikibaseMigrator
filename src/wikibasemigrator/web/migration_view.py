@@ -44,7 +44,7 @@ class MigrationView:
             self.progress_bar = ProgressBar(total=len(translations.get_target_entities()))
             self.migration_log = ui.log(max_lines=10).classes("w-full h-90")
 
-        migrated_entities = await run.io_bound(
+        await run.io_bound(
             self.migrator.migrate_entities_to_target,
             translations,
             summary=summary,

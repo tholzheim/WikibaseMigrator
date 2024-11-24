@@ -126,7 +126,7 @@ class Query:
             cls.save_results(name=file_name, lod=lod_raw)
         lod = []
         for d_raw in lod_raw:
-            d = {key: record.get("value", None) for key, record in d_raw.entities()}
+            d = {key: record.get("value", None) for key, record in d_raw.items()}
             if d:
                 lod.append(d)
         return lod

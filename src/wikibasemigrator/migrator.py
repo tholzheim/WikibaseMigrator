@@ -411,7 +411,7 @@ class WikibaseMigrator:
                 # ToDo: Translate senses
             case _:
                 raise ValueError(f"Unsupported item type: {type(item)}")
-        result = EntityTranslationResult(item=new_item, original_item=item, missing_properties=[], missing_items=[])
+        result = EntityTranslationResult(entity=new_item, original_entity=item, missing_properties=[], missing_items=[])
         self.add_translation_result_mappings(result)
         # add label
         for label in item.labels:
@@ -427,7 +427,7 @@ class WikibaseMigrator:
                 # ToDo: Decide how to handle this
                 continue
             new_item.descriptions.set(description.language, description.value)
-        for language, aliases in item.aliases.aliases.entities():
+        for language, aliases in item.aliases.aliases.items():
             if language not in allowed_languages:
                 continue
             alias_values = [alias.value for alias in aliases]
