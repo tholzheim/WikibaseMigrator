@@ -320,24 +320,38 @@ class WikibaseMigrator:
         translation_result.add_entity_mappings(mappings)
 
     def translate_entities_by_id(
-        self, item_ids: list[str], merge_existing_entities: bool = True
+        self,
+        item_ids: list[str],
+        merge_existing_entities: bool = True,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> EntitySetTranslationResult:
         """
         Translate the items corresponding to the given item_ids
+        :param progress_callback:
         :param item_ids: entity ids to translate
         :param merge_existing_entities If True existing entities are merged. Otherwise, existing entities are ignored
         :return:
         """
+        if progress_callback is None:
+
+            def progress_callback(x: str):
+                return None
+
+        progress_callback(f"Fetching {len(item_ids)} items records from {self.profile.source.name}")
         entities = self.get_items_from_source(item_ids)
         used_ids = set()
         for item in entities:
             used_ids.update(self.get_all_entity_ids(item))
+        progress_callback("Preparing entity ID translation mappings")
         self.prepare_mapper_cache_by_ids(list(used_ids))
         if not merge_existing_entities:
+            progress_callback("Excluding existing entities")
             entities = [entity for entity in entities if self.mapper.get_mapping_for(entity.id) is None]
+        progress_callback("Translating entities")
         translated_entities = [self.translate_item(entity) for entity in entities]
         translation_results = EntitySetTranslationResult.from_list(translated_entities)
         if merge_existing_entities:
+            progress_callback("Merging existing entities")
             self.merge_existing_entities(translation_results)
         return translation_results
 

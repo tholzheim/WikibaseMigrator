@@ -15,24 +15,32 @@ from wikibasemigrator.wikibase import Query
 logger = logging.getLogger(__name__)
 
 
-class LogElementHandler(logging.Handler):
+class LogElementHandler:
     """A logging handler that emits messages to a log element."""
 
-    def __init__(self, element: ui.log, level: int = logging.NOTSET) -> None:
+    def __init__(self, element: ui.log) -> None:
         self.element = element
-        super().__init__(level)
 
-    def emit(self, record: logging.LogRecord) -> None:
+    def emit(self, msg: str) -> None:
         """
         emit changes to the log element
-        :param record:
+        :param msg:
         :return:
         """
-        try:
-            msg = self.format(record)
-            self.element.push(msg)
-        except Exception:
-            self.handleError(record)
+        self.element.push(msg)
+
+
+def _get_entity_label(entity_id: str, entity_label: str) -> str:
+    """
+    get entity label represenation
+    :param entity_id:
+    :param entity_label:
+    :return:
+    """
+    label = entity_id
+    if entity_label:
+        label += f" ({entity_label})"
+    return label
 
 
 class TranslationView:
@@ -80,12 +88,15 @@ class TranslationView:
             ui.spinner().classes("mx-auto")
             log = ui.log(max_lines=10).classes("w-full h-60")
             handler = LogElementHandler(log)
-            logging.root.addHandler(handler)
         self.translation_result_container.update()
         logger.info(f"Start translation of {len(item_ids)} items...")
-        self.translations = await run.io_bound(self.migrator.translate_entities_by_id, item_ids)
+        self.translations = await run.io_bound(
+            self.migrator.translate_entities_by_id,
+            item_ids,
+            merge_existing_entities=True,
+            progress_callback=handler.emit,
+        )
         await self.fetch_labels()
-        logging.root.removeHandler(handler)
         logger.info("Displaying Translation result...")
         self.translation_result_container.clear()
         with ui.element("div").classes("container flex flex-col gap-2") as self.translation_result_container:
@@ -306,8 +317,8 @@ class TranslationView:
             target_url = f"{self.profile.target.item_prefix}{target_id}"
             rows.append(
                 {
-                    "source": f"""<a href="{source_url}" target="_blank">{source_id} ({source_label})</a>""",
-                    "target": f"""<a href="{target_url}" target="_blank">{target_id} ({target_label})</a>""",
+                    "source": f"""<a href="{source_url}" target="_blank">{_get_entity_label(source_id, source_label)}</a>""",  # noqa: E501
+                    "target": f"""<a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>""",  # noqa: E501
                 }
             )
         with ui.expansion(text="Applied Mappings").classes("ring-2 rounded"):
@@ -344,10 +355,10 @@ class TranslationView:
                 merge_counter += 1
                 target_label = self.target_labels.get(target_id, "")
                 target_url = f"{self.profile.target.item_prefix}{target_id}"
-                target = f"""Merging with <a href="{target_url}" target="_blank">{target_id} ({target_label})</a>"""
+                target = f"""Merging with <a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>"""  # noqa: E501
             rows.append(
                 {
-                    "source": f"""<a href="{source_url}" target="_blank">{source_id} ({source_label})</a>""",
+                    "source": f"""<a href="{source_url}" target="_blank">{_get_entity_label(source_id, source_label)}</a>""",  # noqa: E501
                     "target": target,
                 }
             )
