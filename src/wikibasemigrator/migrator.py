@@ -573,7 +573,7 @@ class WikibaseMigrator:
         """
         if self.profile.mapping.ignore_unknown_values and snak.snaktype is WikibaseSnakType.UNKNOWN_VALUE:
             return None
-        if self.profile.mapping.ignore_no_value and snak.snaktype is WikibaseSnakType.NO_VALUE:
+        if self.profile.mapping.ignore_no_values and snak.snaktype is WikibaseSnakType.NO_VALUE:
             return None
         new_property_number = self.mapper.get_mapping_for(snak.property_number)
         if new_property_number is None:

@@ -3,10 +3,10 @@ from pathlib import Path
 
 from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
 
-# path = Path(__file__).parent.joinpath("../profiles/test.yaml")
+path = Path(__file__).parent.joinpath("../profiles/test.yaml")
 # path = Path(__file__).parent.joinpath("../profiles/WikibaseMigrationTest.yaml")
 # path = Path(__file__).parent.joinpath("../profiles/FactGrid.yaml")
-path = Path.home().joinpath(".config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml")
+# path = Path.home().joinpath(".config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml")
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)

@@ -11,6 +11,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
 from wikibasemigrator.model.profile import UserToken, load_profile
+from wikibasemigrator.web.config_page import ConfigPage
 from wikibasemigrator.web.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.wikibase_controller_page import WikibaseControllerPage
 
@@ -65,13 +66,16 @@ class Webserver:
         @ui.page("/")
         async def main_page(client: Client) -> None:
             await client.connected()
-            token = self.user_token
-            if token is not None:
-                user = await self.get_user(token)
-            else:
-                user = None
             profile = self.get_profile()
+            user = await self.get_user()
             WikibaseControllerPage(profile, self.get_icon_path(), user=user).setup_ui()
+
+        @ui.page("/config")
+        async def config_page(client: Client) -> None:
+            await client.connected()
+            profile = self.get_profile()
+            user = await self.get_user()
+            ConfigPage(profile, self.get_icon_path(), user=user).setup_ui()
 
     @property
     def user_token(self) -> dict | None:
@@ -91,7 +95,37 @@ class Webserver:
         """
         app.storage.user["token"] = token
 
-    async def get_user(self, token: dict) -> MediaWikiUserIdentity:
+    @property
+    def user(self) -> MediaWikiUserIdentity | None:
+        """
+        Get the user identity from storage
+        :return:
+        """
+        user_record = app.storage.user.get("user", None)
+        if user_record is None:
+            user = None
+        else:
+            user = MediaWikiUserIdentity.model_validate_json(user_record)
+            if not user.is_valid():
+                user = None
+        return user
+
+    @user.setter
+    def user(self, user: MediaWikiUserIdentity) -> None:
+        app.storage.user["user"] = user.model_dump_json()
+
+    async def get_user(self):
+        """
+        Get the user identity from storage
+        :return:
+        """
+        if self.user is None:
+            token = self.user_token
+            if token is not None:
+                self.user = await self.query_user(token)
+        return self.user
+
+    async def query_user(self, token: dict) -> MediaWikiUserIdentity:
         """
         Get user information based on the given token
         :param token:
