@@ -1,4 +1,6 @@
+import csv
 import datetime
+import io
 import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -43,11 +45,26 @@ def _get_entity_label(entity_id: str, entity_label: str) -> str:
     return label
 
 
+def _get_csv_string(records: list[dict]) -> bytes:
+    """
+    convert records to csv string
+    :param records:
+    :return:
+    """
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=records[0].keys())
+    writer.writeheader()
+    writer.writerows(records)
+    return output.getvalue().encode()
+
+
 class TranslationView:
     """
     Provides an overview of the translated items and options to generate quickstatements
     or to directly migrate the items to another wikibase
     """
+
+    EXPANSION_STYLE = "ring-1 rounded w-full"
 
     def __init__(
         self,
@@ -100,12 +117,14 @@ class TranslationView:
         logger.info("Displaying Translation result...")
         self.translation_result_container.clear()
         with ui.element("div").classes("container flex flex-col gap-2") as self.translation_result_container:
-            self.display_general_translation_overview()
-            self.display_migration_controls()
-            self.display_applied_mappings()
-            self.display_translation_item_viewer()
-            self.display_missing_mappings()
-            self.display_quickstatements()
+            with ui.element("div").classes("container flex flex-col gap-2 ring-2 p-2 rounded"):
+                self.display_general_translation_overview()
+                self.display_migration_controls()
+            with ui.element("div").classes("container flex flex-col pt-6 gap-2"):
+                self.display_applied_mappings()
+                self.display_translation_item_viewer()
+                self.display_missing_mappings()
+                self.display_quickstatements()
 
     def display_migration_controls(self):
         """
@@ -122,8 +141,8 @@ class TranslationView:
         :return:
         """
         with ui.expansion(
-            "Translation Item Viewer", icon="preview", caption="view translation per item in detail"
-        ).classes("w-full ring-2 rounded"):
+            "Translation Item Viewer", icon="preview", caption="view translation per item in detail", group="group"
+        ).classes(self.EXPANSION_STYLE):
             with ui.element("div").classes("rounded bg-sky-50 p-4 flex flex-col gap-2"):
                 selections = self.get_translated_items_from_source()
                 if selections:
@@ -140,30 +159,38 @@ class TranslationView:
         """
         qs_generator = QuickStatementsGenerator()
         quickstatements = qs_generator.generate_items(self.translations.get_target_entities())
-        with ui.expansion(text="QuickStatements").classes("ring-2 rounded"):
-            if self.profile.target.quickstatement_url is not None:
-                with ui.link(
-                    target=self.profile.target.quickstatement_url.unicode_string(),
-                    new_tab=True,
-                ) as link:
-                    link.classes("flex flex-row gap-2")
-                    qs_icon = Path(__file__).parent.joinpath("../resources/Commons_to_Wikidata_QuickStatements.svg")
-                    ui.html(qs_icon.read_text())
-                    ui.label("Open Quickstatements Endpoint")
-            ui.button(
-                "Download",
-                on_click=lambda: ui.download(
-                    quickstatements.encode(), f"{datetime.datetime.now().strftime('%Y-%m-%dT%H%M%S')}_qs-migration.qs"
-                ),
-            )
-            Code(quickstatements, language="quickstatements").classes(" p-2")
+        qs_icon = Path(__file__).parent.joinpath("../resources/Commons_to_Wikidata_QuickStatements.svg")
+        with ui.expansion(text="QuickStatements", group="group").classes(self.EXPANSION_STYLE) as expansion:
+            with expansion.add_slot("header"):
+                with ui.element("div").classes("flex flex-row gap-2 items-center"):
+                    if self.profile.target.quickstatement_url is not None:
+                        ui.html(qs_icon.read_text())
+                    ui.label("QuickStatements")
+            with ui.element("div").classes("flex flex-col gap-2 container"):
+                with ui.element("div").classes("flex flex-row gap-2"):
+                    if self.profile.target.quickstatement_url is not None:
+                        with ui.link(
+                            target=self.profile.target.quickstatement_url.unicode_string(),
+                            new_tab=True,
+                        ) as link:
+                            link.classes("flex flex-row gap-2")
+                            ui.label("Open Quickstatements Endpoint")
+                    ui.element("div").classes("grow")
+                    ui.button(
+                        "Download",
+                        on_click=lambda: ui.download(
+                            quickstatements.encode(),
+                            f"{datetime.datetime.now().strftime('%Y-%m-%dT%H%M%S')}_qs-migration.qs",
+                        ),
+                    )
+                Code(quickstatements, language="quickstatements").classes(" p-2")
 
     def display_missing_mappings(self):
         """
         display missing mappings
         :return:
         """
-        with ui.expansion(text="Missing Mappings").classes("ring-2 rounded"):
+        with ui.expansion(text="Missing Mappings", group="group").classes(self.EXPANSION_STYLE):
             self.display_missing_properties()
             self.display_missing_items()
 
@@ -247,6 +274,7 @@ class TranslationView:
         rows = []
         values = self.translations.get_missing_property_mapings()
         values = list(set(values) - set(self.translations.get_source_root_entity_ids()))
+        csv_rows = []
         for entity_id in values:
             label = self.source_labels.get(entity_id, "")
             url = f"{self.profile.source.item_prefix}{entity_id}"
@@ -257,8 +285,24 @@ class TranslationView:
                     "link": f"""<a href="{url}" target="_blank">{url}</a>""",
                 }
             )
+            csv_rows.append({"id": entity_id, "label": label, "link": url})
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            ui.label(f"Missing Properties {len(values)}").classes("text-xl mx-auto")
+            with ui.element("div").classes("flex flex-row gap-2"):
+                ui.label(f"Missing Properties {len(values)}").classes("text-xl mx-auto")
+                with ui.dropdown_button("Download", auto_close=True):
+                    ui.item(
+                        "table (.csv)",
+                        on_click=lambda: ui.download(
+                            _get_csv_string(csv_rows),
+                            f"{datetime.datetime.now().isoformat()}_missing_properties.csv",
+                        ),
+                    )
+                    ui.item(
+                        "oneliner (.txt)",
+                        on_click=lambda: ui.download(
+                            ",".join(values).encode(), f"{datetime.datetime.now().isoformat()}_missing_properties.txt"
+                        ),
+                    )
             ui.aggrid(
                 {
                     "columnDefs": [
@@ -280,6 +324,7 @@ class TranslationView:
         values = self.translations.get_missing_item_mapings()
         values = list(set(values) - set(self.translations.get_source_root_entity_ids()))
         self.translations.get_target_entities()
+        csv_rows = []
         for entity_id in values:
             label = self.source_labels.get(entity_id, "")
             url = f"{self.profile.source.item_prefix}{entity_id}"
@@ -290,8 +335,24 @@ class TranslationView:
                     "link": f"""<a href="{url}" target="_blank">{url}</a>""",
                 }
             )
+            csv_rows.append({"id": entity_id, "label": label, "link": url})
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            ui.label(f"Missing Items {len(values)}").classes("text-xl mx-auto")
+            with ui.element("div").classes("flex flex-row gap-2"):
+                ui.label(f"Missing Items {len(values)}").classes("text-xl mx-auto")
+                with ui.dropdown_button("Download", auto_close=True):
+                    ui.item(
+                        "table (.csv)",
+                        on_click=lambda: ui.download(
+                            _get_csv_string(csv_rows),
+                            f"{datetime.datetime.now().isoformat()}_missing_properties.csv",
+                        ),
+                    )
+                    ui.item(
+                        "oneliner (.txt)",
+                        on_click=lambda: ui.download(
+                            ",".join(values).encode(), f"{datetime.datetime.now().isoformat()}_missing_properties.txt"
+                        ),
+                    )
             ui.aggrid(
                 {
                     "columnDefs": [
@@ -321,7 +382,7 @@ class TranslationView:
                     "target": f"""<a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>""",  # noqa: E501
                 }
             )
-        with ui.expansion(text="Applied Mappings").classes("ring-2 rounded"):
+        with ui.expansion(text="Applied Mappings", group="group").classes(self.EXPANSION_STYLE):
             with ui.element("div").classes("flex flex-col gap-2 w-full"):
                 ui.label(f"{len(mappings)} mappings applied")
                 ui.aggrid(
