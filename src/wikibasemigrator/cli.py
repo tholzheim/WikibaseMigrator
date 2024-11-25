@@ -11,6 +11,7 @@ from rich.table import Table
 
 from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile, load_profile
+from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
 from wikibasemigrator.wikibase import Query
 
@@ -152,52 +153,13 @@ def migrate(
         )
         target_labels = {label["qid"]: label.get("label") for label in lod}
         progress.update(target_label_task, completed=1)
-    table = Table(title="Translation Result")
-
-    table.add_column("Existing Mappings", justify="right", style="green")
-    table.add_column("Missing Items", style="magenta")
-    table.add_column("Missing Properties", justify="right", style="red")
-
-    table.add_row(
-        str(len([k for k, v in translations.get_mapping().items() if v])),
-        str(len(translations.get_missing_items())),
-        str(len(translations.get_missing_properties())),
-    )
-    console.print(table)
+    show_translation_result(translations)
     if show_details or not force:
-        mapping_table = Table(title="Applied Mapping")
-        mapping_table.add_column("Source", style="blue")
-        mapping_table.add_column("Target", style="green")
-        mapping_table.add_column("Source URL", justify="left")
-        mapping_table.add_column("Target URL", justify="left")
-        for source_id, target_id in sorted(translations.get_mapping().items()):
-            if target_id is None:
-                continue
-            mapping_table.add_row(
-                f"{source_id} ({source_labels.get(source_id)})",
-                f"{target_id} ({target_labels.get(target_id)})",
-                f"{profile.source.item_prefix}{source_id}",
-                f"{profile.target.item_prefix}{target_id}",
-            )
-        console.print(mapping_table)
-
-        item_table = Table(title="Missing Items")
-        item_table.add_column("Item", style="red")
-        item_table.add_column("Source URL", justify="left")
-        for source_id in sorted(translations.get_missing_items()):
-            item_table.add_row(
-                f"{source_id} ({source_labels.get(source_id)})", f"{profile.source.item_prefix}{source_id}"
-            )
-        console.print(item_table)
-
-        property_table = Table(title="Missing Properties")
-        property_table.add_column("Property", style="red")
-        property_table.add_column("Source URL", justify="left")
-        for source_id in sorted(translations.get_missing_properties()):
-            property_table.add_row(
-                f"{source_id} ({source_labels.get(source_id)})", f"{profile.source.item_prefix}{source_id}"
-            )
-        console.print(property_table)
+        show_applied_mappings(
+            translations=translations, source_labels=source_labels, target_labels=target_labels, profile=profile
+        )
+        show_missing_items(translations=translations, source_labels=source_labels, profile=profile)
+        show_missing_properties(translations, source_labels=source_labels, profile=profile)
     if not force:
         apply_migration = typer.confirm("Migrate entities with the shown mapping?")
     else:
@@ -221,24 +183,115 @@ def migrate(
                     console.print(f"Migrated entity {result.created_entity.id}")
 
             migrator.migrate_entities_to_target(translations, summary=summary, entity_done_callback=update_progress)
-        result_table = Table(title="Migrated Entities")
-        result_table.add_column("Entity", style="green")
-        result_table.add_column("Target URL", justify="left")
-        for translation in translations:
-            if translation.created_entity is None:
-                console.log(
-                    f"Something went wrong migrating entity {translation.original_entity.id} {translation.errors}"
-                )
-                continue
-            label = (
-                translation.created_entity.labels.get("en").value
-                if "en" in translation.created_entity.labels.values
-                else None
+        show_migration_result(translations, profile)
+        console.print("Migration done", style="bold green")
+
+
+def show_translation_result(translations: EntitySetTranslationResult):
+    """
+    show short overview table of the translation result
+    :param translations:
+    :return:
+    """
+    table = Table(title="Translation Result")
+    table.add_column("Existing Mappings", justify="right", style="green")
+    table.add_column("Missing Items", style="magenta")
+    table.add_column("Missing Properties", justify="right", style="red")
+    table.add_row(
+        str(len([k for k, v in translations.get_mapping().items() if v])),
+        str(len(translations.get_missing_items())),
+        str(len(translations.get_missing_properties())),
+    )
+    console.print(table)
+
+
+def show_applied_mappings(
+    translations: EntitySetTranslationResult,
+    source_labels: dict[str, str],
+    target_labels: dict[str, str],
+    profile: WikibaseMigrationProfile,
+):
+    """
+    show table of applied mappings
+    """
+    mapping_table = Table(title="Applied Mapping")
+    mapping_table.add_column("Source", style="blue")
+    mapping_table.add_column("Target", style="green")
+    mapping_table.add_column("Source URL", justify="left")
+    mapping_table.add_column("Target URL", justify="left")
+    for source_id, target_id in sorted(translations.get_mapping().items()):
+        if target_id is None:
+            continue
+        mapping_table.add_row(
+            f"{source_id} ({source_labels.get(source_id)})",
+            f"{target_id} ({target_labels.get(target_id)})",
+            f"{profile.source.item_prefix}{source_id}",
+            f"{profile.target.item_prefix}{target_id}",
+        )
+    console.print(mapping_table)
+
+
+def show_missing_items(
+    translations: EntitySetTranslationResult, source_labels: dict[str, str], profile: WikibaseMigrationProfile
+):
+    """
+    show table of missing items
+    """
+    item_table = Table(title="Missing Items")
+    item_table.add_column("Item", style="red")
+    item_table.add_column("Source URL", justify="left")
+    for source_id in sorted(translations.get_missing_items()):
+        item_table.add_row(f"{source_id} ({source_labels.get(source_id)})", f"{profile.source.item_prefix}{source_id}")
+    console.print(item_table)
+
+
+def show_missing_properties(
+    translations: EntitySetTranslationResult, source_labels: dict[str, str], profile: WikibaseMigrationProfile
+):
+    """
+    show table of missing properties
+    """
+    property_table = Table(title="Missing Properties")
+    property_table.add_column("Property", style="red")
+    property_table.add_column("Source URL", justify="left")
+    for source_id in sorted(translations.get_missing_properties()):
+        property_table.add_row(
+            f"{source_id} ({source_labels.get(source_id)})", f"{profile.source.item_prefix}{source_id}"
+        )
+    console.print(property_table)
+
+
+def show_migration_result(translations: EntitySetTranslationResult, profile: WikibaseMigrationProfile):
+    """
+    Show migration result and migration errors as table
+    """
+    result_table = Table(title="Migrated Entities")
+    result_table.add_column("Entity", style="green")
+    result_table.add_column("Target URL", justify="left")
+    error_table = Table(title="Migration Errors")
+    error_table.add_column("Entity", style="red")
+    error_table.add_column("Source URL", justify="left")
+    error_table.add_column("Error Message", justify="left")
+    for translation in translations:
+        if translation.created_entity is None:
+            console.log(f"Something went wrong migrating entity {translation.original_entity.id} {translation.errors}")
+            if "en" in translation.original_entity.labels.values:
+                label = translation.original_entity.labels.get("en").value
+            else:
+                label = None
+            target_id = translation.original_entity.id
+            error_table.add_row(
+                f"{target_id} ({label})", f"{profile.source.item_prefix}{target_id}", f"{translation.errors}"
             )
+        else:
+            if "en" in translation.created_entity.labels.values:
+                label = translation.created_entity.labels.get("en").value
+            else:
+                label = None
             target_id = translation.created_entity.id
             result_table.add_row(f"{target_id} ({label})", f"{profile.target.item_prefix}{target_id}")
-        console.print(result_table)
-        console.print("Migration done", style="bold green")
+    console.print(result_table)
+    console.print(error_table)
 
 
 if __name__ == "__main__":
