@@ -54,6 +54,7 @@ test = [
     "tox",
     "pytest",
     "pytest-cov",
+    "pytest-asyncio",
     "ruff",
     "mypy",
     "deepdiff"
@@ -163,6 +164,7 @@ testpaths = [
 pythonpath = [
   "src"
 ]
+asyncio_mode = "auto"
 
 [tool.datamodel-codegen]
 field-constraints = true
@@ -177,6 +179,3 @@ line-length = 120
 [tool.coverage.run]
 source = ["wikibasemigrator"]
 omit = ["tests/../*.py", "*/*wikibasemigrator/web/**/*.py"]
-
-
-
