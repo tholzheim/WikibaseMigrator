@@ -100,66 +100,19 @@ def migrate(
     console.print(f"Loaded profile: {profile.name}")
 
     if entity is None:
-        if query or query_file:
-            if query_file:
-                if not query_file.exists():
-                    console.print(f"Provided query file {query_file} does not exist", style=STYLE_ERROR_MSG)
-                    console.log("Aborting migration")
-                    raise typer.Abort()
-                with rich_open(query_file, "rb") as file:
-                    query_str = file.read()
-            elif query:
-                query_str = query
-            else:
-                raise typer.BadParameter("If no items are given a query has to be provided")
-            with progress:
-                query_task = progress.add_task("[green]Querying entities...", total=1, completed=1)
-                lod = Query.execute_query(query=query_str, endpoint_url=profile.source.sparql_url)
-                entities_with_prefix = [d.get(ITEM_QUERY_VARIABLE) for d in lod if d.get(ITEM_QUERY_VARIABLE, None)]
-                entity = [
-                    entity_id.replace(profile.source.item_prefix.unicode_string(), "")
-                    for entity_id in entities_with_prefix
-                    if entity_id is not None
-                ]
-                progress.update(query_task, completed=1)
-        else:
-            console.print(
-                "No items to migrate. Please provide a list of entity IDs, a query or a query file",
-                style=STYLE_ERROR_MSG,
-            )
-            console.log("Aborting migration")
-            raise typer.Abort()
-    console.log(f"Start translation of {len(entity)} items")
-    with progress:
-        translation_task = progress.add_task("[green]Translating entities...", total=1, completed=1)
-        migrator = WikibaseMigrator(profile)
-        translations = migrator.translate_entities_by_id(entity)
-        progress.update(translation_task, completed=1)
-    with progress:
-        source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
-        lod = Query.get_item_label(
-            endpoint_url=profile.source.sparql_url,
-            item_ids=translations.get_source_entity_ids(),
-            item_prefix=profile.source.item_prefix,
-        )
-        source_labels = {label["qid"]: label.get("label") for label in lod}
-        progress.update(source_label_task, completed=1)
-    with progress:
-        target_label_task = progress.add_task("[green]Querying target labels...", total=1, completed=1)
-        lod = Query.get_item_label(
-            endpoint_url=profile.target.sparql_url,
-            item_ids=translations.get_target_entity_ids(),
-            item_prefix=profile.target.item_prefix,
-        )
-        target_labels = {label["qid"]: label.get("label") for label in lod}
-        progress.update(target_label_task, completed=1)
+        query_str = resolve_query_params(query, query_file)
+        entities = select_entities_from_query(query_str, profile=profile, progress=progress)
+    else:
+        entities = entity
+    migrator = WikibaseMigrator(profile)
+    translations = translate_entities(entities, migrator, progress)
+    source_labels = _query_source_labels(translations=translations, profile=profile, progress=progress)
+    target_labels = _query_target_labels(translations=translations, profile=profile, progress=progress)
     show_translation_result(translations)
     if show_details or not force:
-        show_applied_mappings(
+        show_translation_details(
             translations=translations, source_labels=source_labels, target_labels=target_labels, profile=profile
         )
-        show_missing_items(translations=translations, source_labels=source_labels, profile=profile)
-        show_missing_properties(translations, source_labels=source_labels, profile=profile)
     if not force:
         apply_migration = typer.confirm("Migrate entities with the shown mapping?")
     else:
@@ -185,6 +138,117 @@ def migrate(
             migrator.migrate_entities_to_target(translations, summary=summary, entity_done_callback=update_progress)
         show_migration_result(translations, profile)
         console.print("Migration done", style="bold green")
+
+
+def show_translation_details(
+    translations: EntitySetTranslationResult,
+    source_labels: dict[str, str],
+    target_labels: dict[str, str],
+    profile: WikibaseMigrationProfile,
+):
+    """
+    Show detailed information of the translation process
+    :param translations:
+    :param source_labels:
+    :param target_labels:
+    :param profile:
+    :return:
+    """
+    show_applied_mappings(
+        translations=translations, source_labels=source_labels, target_labels=target_labels, profile=profile
+    )
+    show_missing_items(translations=translations, source_labels=source_labels, profile=profile)
+    show_missing_properties(translations, source_labels=source_labels, profile=profile)
+
+
+def translate_entities(entities: list[str], migrator, progress: Progress) -> EntitySetTranslationResult:
+    """
+    Translate the entities
+    :return:
+    """
+    console.log(f"Start translation of {len(entities)} items")
+    with progress:
+        translation_task = progress.add_task("[green]Translating entities...", total=1, completed=1)
+        translations = migrator.translate_entities_by_id(entities)
+        progress.update(translation_task, completed=1)
+    return translations
+
+
+def _query_source_labels(
+    translations: EntitySetTranslationResult, profile: WikibaseMigrationProfile, progress: Progress
+) -> dict[str, str]:
+    """
+    Query source labels
+    :return:
+    """
+    with progress:
+        target_label_task = progress.add_task("[green]Querying target labels...", total=1, completed=1)
+        lod = Query.get_item_label(
+            endpoint_url=profile.target.sparql_url,
+            item_ids=translations.get_target_entity_ids(),
+            item_prefix=profile.target.item_prefix,
+        )
+        target_labels = {label["qid"]: label.get("label") for label in lod}
+        progress.update(target_label_task, completed=1)
+    return target_labels
+
+
+def _query_target_labels(
+    translations: EntitySetTranslationResult, profile: WikibaseMigrationProfile, progress: Progress
+) -> dict[str, str]:
+    """
+    Query target labels
+    :return:
+    """
+    with progress:
+        source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
+        lod = Query.get_item_label(
+            endpoint_url=profile.source.sparql_url,
+            item_ids=translations.get_source_entity_ids(),
+            item_prefix=profile.source.item_prefix,
+        )
+        source_labels = {label["qid"]: label.get("label") for label in lod}
+        progress.update(source_label_task, completed=1)
+    return source_labels
+
+
+def resolve_query_params(query_file: Path | None, query: str | None):
+    """
+    Resolve query parameters
+    :param query_file:
+    :param query:
+    :return:
+    """
+    if query_file:
+        if not query_file.exists():
+            console.print(f"Provided query file {query_file} does not exist", style=STYLE_ERROR_MSG)
+            console.log("Aborting migration")
+            raise typer.Abort()
+        with rich_open(query_file, "rb") as file:
+            query_str = file.read()
+    elif query:
+        query_str = query
+    else:
+        raise typer.BadParameter("No items to migrate. Please provide a list of entity IDs, a query or a query file")
+    return query_str
+
+
+def select_entities_from_query(query: str, profile: WikibaseMigrationProfile, progress: Progress):
+    """
+    Select the entities by executing the query
+    :return:
+    """
+    with progress:
+        query_task = progress.add_task("[green]Querying entities...", total=1, completed=1)
+        lod = Query.execute_query(query=query, endpoint_url=profile.source.sparql_url)
+        entities_with_prefix = [d.get(ITEM_QUERY_VARIABLE) for d in lod if d.get(ITEM_QUERY_VARIABLE, None)]
+        entities = [
+            entity_id.replace(profile.source.item_prefix.unicode_string(), "")
+            for entity_id in entities_with_prefix
+            if entity_id is not None
+        ]
+        progress.update(query_task, completed=1)
+    return entities
 
 
 def show_translation_result(translations: EntitySetTranslationResult):
