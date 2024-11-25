@@ -372,7 +372,11 @@ class WikibaseMigrator:
                 continue
 
             logger.debug(f"Merging {translated_entity.original_entity.id} into {target_entity_id}")
-            merged_item = merger.merge(translated_entity.entity, target_entity)
+            try:
+                merged_item = merger.merge(translated_entity.entity, target_entity)
+            except Exception as e:
+                translated_entity.errors.append(str(e))
+                logger.exception(e)
             if merged_item is not None:
                 translated_entity.entity = merged_item
 
