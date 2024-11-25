@@ -415,7 +415,7 @@ class WikibaseMigrator:
         if allowed_languages is None:
             allowed_languages = self.profile.get_allowed_languages()
         if allowed_sitelinks is None:
-            allowed_sitelinks = self.profile.get_allowed_sidelinks()
+            allowed_sitelinks = self.profile.get_allowed_sitelinks()
         self.prepare_mapper_cache(entity)
         match entity.ETYPE:
             case WikibaseEntityTypes.ITEM:
@@ -693,7 +693,7 @@ class WikibaseMigrator:
                 logger.warning(f"Back reference not defined for type {type(entity)}")
                 return
         match back_reference.reference_type:
-            case EntityBackReferenceType.SIDELINK:
+            case EntityBackReferenceType.SITELINK:
                 if entity.ETYPE in WikibaseEntityTypes.support_sidelinks():
                     entity.sitelinks.set(site=back_reference.property_id, title=source_id)
                 else:

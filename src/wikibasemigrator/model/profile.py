@@ -76,13 +76,13 @@ class EntityMappingConfig(BaseModel):
     item_mapping_query: str
     property_mapping_query: str
     languages: list[str] | None = None
-    sidelinks: list[str] | None = None
+    sitelinks: list[str] | None = None
     ignore_no_value: bool = False
     ignore_unknown_values: bool = False
 
 
 class EntityBackReferenceType(str, Enum):
-    SIDELINK = "Sidelink"
+    SITELINK = "Sitelink"
     PROPERTY = "Property"
 
 
@@ -136,10 +136,10 @@ class WikibaseMigrationProfile(BaseModel):
             self.mapping.languages = allowed_languages
         return self.mapping.languages
 
-    def get_allowed_sidelinks(self) -> list[str]:
-        if self.mapping.sidelinks is None:
-            self.mapping.sidelinks = ["enwiki", "dewiki", "wikidatawiki"]
-        return self.mapping.sidelinks
+    def get_allowed_sitelinks(self) -> list[str]:
+        if self.mapping.sitelinks is None:
+            self.mapping.sitelinks = ["enwiki", "dewiki", "wikidatawiki"]
+        return self.mapping.sitelinks
 
     def get_wikibase_config_of_mapping_location(self) -> WikibaseConfig:
         """

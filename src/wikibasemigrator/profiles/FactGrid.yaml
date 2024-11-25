@@ -46,10 +46,10 @@ mapping:
       BIND(STRAFTER(STR(?factgrid_item), "https://database.factgrid.de/entity/") AS ?target_item)
     }
   languages: ["de", "en"]
-  sidelinks: ["wikidatawiki", "dewiki", "enwiki"]
+  sitelinks: ["wikidatawiki", "dewiki", "enwiki"]
 back_reference:
   item:
-    type: Sidelink
+    type: Sitelink
     id: wikidatawiki
   property:
     type: Property

@@ -48,7 +48,7 @@ mapping:
     }
 back_reference:
   item:
-    type: Sidelink
+    type: Sitelink
     id: wikidatawiki
   property:
     type: Property

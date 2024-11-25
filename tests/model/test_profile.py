@@ -47,9 +47,9 @@ class TestWikibaseMigrationProfile(unittest.TestCase):
 
     def test_get_allowed_sidelinks(self):
         """
-        test get_allowed_sidelinks
+        test get_allowed_sitelinks
         """
-        allowed_sidelinks = self.profile.get_allowed_sidelinks()
+        allowed_sidelinks = self.profile.get_allowed_sitelinks()
         self.assertIsInstance(allowed_sidelinks, list)
         self.assertGreaterEqual(len(allowed_sidelinks), 1)
 
