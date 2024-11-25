@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from authlib.integrations.starlette_client import OAuth
@@ -44,7 +45,7 @@ class Webserver:
             api_base_url=self.profile.target.mediawiki_api_url,
             client_kwargs=None,
         )
-        app.add_middleware(SessionMiddleware, secret_key="some-random-string")
+        app.add_middleware(SessionMiddleware, secret_key=os.environ.get("NICEGUI_SECRET_KEY", ""))
 
         @app.route("/oauth_callback")
         async def oauth_callback(request: Request):
@@ -139,7 +140,6 @@ class Webserver:
             port=port,
             title=self.profile.name,
             favicon=self.icon_path,
-            storage_secret="WikibaseMigratorSecret",
             reload=reload,
             **kwargs,
         )
