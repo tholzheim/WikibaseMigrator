@@ -1,5 +1,6 @@
 import json
 import logging
+import tempfile
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -335,6 +336,7 @@ class WikibaseMigrator:
         if progress_callback is None:
 
             def progress_callback(x: str):
+                logger.debug(x)
                 return None
 
         progress_callback(f"Fetching {len(item_ids)} items records from {self.profile.source.name}")
@@ -689,7 +691,9 @@ class WikibaseMigrator:
         try:
             entity_json = entity.entity.get_json()
             if logger.level <= logging.DEBUG:
-                path = Path(f"/tmp/WikibaseMigrator/migrations/{datetime.now()}_{entity.original_entity.id}.json")
+                path = Path(tempfile.gettempdir()).joinpath(
+                    f"/WikibaseMigrator/migrations/{datetime.now()}_{entity.original_entity.id}.json"
+                )
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with open(path, "w") as f:
                     json.dump(entity_json, f)
