@@ -9,7 +9,7 @@ from pathlib import Path
 from wikibaseintegrator import WikibaseIntegrator, datatypes, wbi_login
 from wikibaseintegrator.datatypes import BaseDataType
 from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntity, PropertyEntity
-from wikibaseintegrator.models import Qualifiers, Reference, References, Snak
+from wikibaseintegrator.models import Claim, Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator.wbi_enums import WikibaseSnakType
 from wikibaseintegrator.wbi_exceptions import MissingEntityException, NonExistentEntityError
@@ -350,7 +350,7 @@ class WikibaseMigrator:
             progress_callback("Excluding existing entities")
             entities = [entity for entity in entities if self.mapper.get_mapping_for(entity.id) is None]
         progress_callback("Translating entities")
-        translated_entities = [self.translate_item(entity) for entity in entities]
+        translated_entities = [self.translate_entity(entity) for entity in entities]
         translation_results = EntitySetTranslationResult.from_list(translated_entities)
         if merge_existing_entities:
             progress_callback("Merging existing entities")
@@ -396,101 +396,170 @@ class WikibaseMigrator:
             if merged_item is not None:
                 translated_entity.entity = merged_item
 
-    def translate_item(
+    def translate_entity(
         self,
-        item: WbEntity,
+        entity: WbEntity,
         allowed_languages: list[str] | None = None,
         allowed_sitelinks: list[str] | None = None,
         with_back_reference: bool = True,
     ) -> EntityTranslationResult:
         """
-        translates given item from source to target wikibase instance
+        translates given entity from source to target wikibase instance
         ToDo: refactor to reduce complexity
         :param with_back_reference:
         :param allowed_sitelinks:
         :param allowed_languages:
-        :param item: wikibase item to translate from the source wikibase instance
+        :param entity: wikibase item to translate from the source wikibase instance
         :return:
         """
         if allowed_languages is None:
             allowed_languages = self.profile.get_allowed_languages()
         if allowed_sitelinks is None:
             allowed_sitelinks = self.profile.get_allowed_sidelinks()
-        self.prepare_mapper_cache(item)
-        match item.ETYPE:
+        self.prepare_mapper_cache(entity)
+        match entity.ETYPE:
             case WikibaseEntityTypes.ITEM:
-                new_item = self.target_wbi.item.new()
+                new_entity = self.target_wbi.item.new()
             case WikibaseEntityTypes.PROPERTY:
-                new_item = self.target_wbi.property.new()
-                new_item.datatype = item.datatype
+                new_entity = self.target_wbi.property.new()
+                new_entity.datatype = entity.datatype
             case WikibaseEntityTypes.MEDIAINFO:
-                new_item = self.target_wbi.mediainfo.new()
+                new_entity = self.target_wbi.mediainfo.new()
             case WikibaseEntityTypes.LEXEME:
-                new_item = self.target_wbi.lexeme.new()
+                new_entity = self.target_wbi.lexeme.new()
                 # ToDo: Translate lemmas
                 # ToDo: Translate forms
                 # ToDo: Translate senses
             case _:
-                raise ValueError(f"Unsupported item type: {type(item)}")
-        result = EntityTranslationResult(entity=new_item, original_entity=item, missing_properties=[], missing_items=[])
+                raise ValueError(f"Unsupported item type: {type(entity)}")
+        result = EntityTranslationResult(
+            entity=new_entity, original_entity=entity, missing_properties=[], missing_items=[]
+        )
         self.add_translation_result_mappings(result)
         # add label
-        for label in item.labels:
+        self.translate_labels(entity, new_entity, allowed_languages)
+        self.translate_descriptions(entity, new_entity, allowed_languages)
+        self.translate_aliases(entity, new_entity, allowed_languages)
+        self.translate_sitelinks(entity, new_entity, allowed_sitelinks)
+        self.translate_claims(entity, new_entity, result)
+        if with_back_reference:
+            self.add_back_reference(new_entity, entity.id)
+        return result
+
+    def translate_labels(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]) -> None:
+        """
+        translate the labels from the source entity to the target entity
+        :return:
+        """
+        for label in source.labels:
             if label.language not in allowed_languages:
                 continue
-            new_item.labels.set(label.language, label.value)
-        for description in item.descriptions:
+            target.labels.set(label.language, label.value)
+
+    def translate_descriptions(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]):
+        """
+        translate the descriptions from the source entity to the target entity
+        :param source:
+        :param target:
+        :param allowed_languages:
+        :return:
+        """
+        for description in source.descriptions:
             if description.language not in allowed_languages:
                 continue
             desc_value = description.value
-            if desc_value == item.labels.get(description.language):
+            if desc_value == source.labels.get(description.language):
                 # Workaround for label=description validation error → https://github.com/wikimedia/mediawiki-extensions-Wikibase/blob/ae95f990c447a6470667fd16d5b1513003e74cee/repo/i18n/en.json#L190C50-L190C121
                 # ToDo: Decide how to handle this
                 continue
-            new_item.descriptions.set(description.language, description.value)
-        for language, aliases in item.aliases.aliases.items():
+            target.descriptions.set(description.language, description.value)
+
+    def translate_aliases(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]):
+        """
+        translate the aliases from the source entity to the target entity
+        :param source:
+        :param target:
+        :param allowed_languages:
+        :return:
+        """
+        for language, aliases in source.aliases.aliases.items():
             if language not in allowed_languages:
                 continue
             alias_values = [alias.value for alias in aliases]
-            new_item.aliases.set(language, alias_values)
-        if item.ETYPE in WikibaseEntityTypes.support_sidelinks():
-            for sitelink in item.sitelinks.sitelinks.values():
+            target.aliases.set(language, alias_values)
+
+    def translate_sitelinks(self, source: WbEntity, target: WbEntity, allowed_sitelinks: list[str]):
+        """
+        translate the sitelinks from the source entity to the target entity
+        :param source:
+        :param target:
+        :param allowed_sitelinks:
+        :return:
+        """
+
+        if source.ETYPE in WikibaseEntityTypes.support_sidelinks():
+            for sitelink in source.sitelinks.sitelinks.values():
                 if sitelink.site not in allowed_sitelinks:
                     continue
                 # ToDo: badges also require a mapping → currently not queried
-                new_item.sitelinks.set(site=sitelink.site, title=sitelink.title)
-        for claim in item.claims:
-            new_qualifiers = Qualifiers()
-            for qualifier in claim.qualifiers:
-                new_qualifier = self._translate_snak(qualifier, translation_result=result)
-                if new_qualifier is not None:
-                    new_qualifiers.add(new_qualifier)
-                else:
-                    # ToDo: Handle missing property in target
-                    pass
-            new_references = References()
-            for reference in claim.references:
-                new_reference = Reference()
-                for snak in reference.snaks:
-                    new_snak = self._translate_snak(snak, translation_result=result)
-                    if new_snak is not None:
-                        new_reference.add(new_snak)
-                    else:
-                        # ToDo: Handle missing property in target
-                        pass
-                if len(new_reference.snaks) > 0:
-                    new_references.add(new_reference)
+                target.sitelinks.set(site=sitelink.site, title=sitelink.title)
+
+    def translate_claims(self, source: WbEntity, target: WbEntity, result: EntityTranslationResult) -> None:
+        """
+        translate the claims from the source entity to the target entity
+        :param source:
+        :param target:
+        :return:
+        """
+        for claim in source.claims:
+            new_qualifiers = self.translate_qualifiers(claim, result)
+            new_references = self.translate_references(claim, result)
             new_claim = self._translate_snak(
                 claim.mainsnak, translation_result=result, qualifiers=new_qualifiers, references=new_references
             )
             if new_claim is not None:
-                new_item.claims.add(new_claim)
+                target.claims.add(new_claim)
             else:
                 # ToDo: Handle missing property in target
                 pass
-        if with_back_reference:
-            self.add_back_reference(new_item, item.id)
-        return result
+
+    def translate_qualifiers(self, claim: Claim, result: EntityTranslationResult) -> Qualifiers:
+        """
+        translate the qualifiers from the claim to a new set of qualifiers for the target claim
+        :param claim:
+        :param result:
+        :return:
+        """
+        new_qualifiers = Qualifiers()
+        for qualifier in claim.qualifiers:
+            new_qualifier = self._translate_snak(qualifier, translation_result=result)
+            if new_qualifier is not None:
+                new_qualifiers.add(new_qualifier)
+            else:
+                # ToDo: Handle missing property in target
+                pass
+        return new_qualifiers
+
+    def translate_references(self, claim: Claim, result: EntityTranslationResult) -> References:
+        """
+        translate the references from the claim to a new set of references for the target claim
+        :param claim:
+        :param result:
+        :return:
+        """
+        new_references = References()
+        for reference in claim.references:
+            new_reference = Reference()
+            for snak in reference.snaks:
+                new_snak = self._translate_snak(snak, translation_result=result)
+                if new_snak is not None:
+                    new_reference.add(new_snak)
+                else:
+                    # ToDo: Handle missing property in target
+                    pass
+            if len(new_reference.snaks) > 0:
+                new_references.add(new_reference)
+        return new_references
 
     def _translate_snak(
         self, snak: Snak, translation_result: EntityTranslationResult, **kwargs
@@ -692,7 +761,7 @@ class WikibaseMigrator:
             entity_json = entity.entity.get_json()
             if logger.level <= logging.DEBUG:
                 path = Path(tempfile.gettempdir()).joinpath(
-                    f"/WikibaseMigrator/migrations/{datetime.now()}_{entity.original_entity.id}.json"
+                    f"WikibaseMigrator/migrations/{datetime.now()}_{entity.original_entity.id}.json"
                 )
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with open(path, "w") as f:

@@ -26,7 +26,7 @@ class TestWikibaseMigrator(unittest.TestCase):
 
     def test_translation(self):
         item = self.get_Q80()
-        translation_result = self.migrator.translate_item(item)
+        translation_result = self.migrator.translate_entity(item)
         self.assertGreaterEqual(len(translation_result.missing_properties), 5)
         self.assertGreaterEqual(len(translation_result.missing_items), 2)
         qs_generator = QuickStatementsGenerator()
