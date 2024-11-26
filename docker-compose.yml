@@ -13,4 +13,4 @@ services:
         volumes:
             - type: bind
               source: $HOME/.config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml
-              target: /root/config.yaml
+              target: /config.yaml
