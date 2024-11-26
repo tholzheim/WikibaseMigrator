@@ -42,14 +42,14 @@ class Webpage:
         setup page header
         """
         with ui.header().classes(replace="row items-center") as header:
-            header.classes("bg-white dark:bg-slate-800 border-2 gap-2 flex flex-row p-2 gap-4")
+            header.classes("bg-white dark:bg-slate-800 border-2 gap-2 flex flex-row p-2 gap-2")
             self.display_page_icon()
             with ui.link(target="/"):
                 ui.button(icon="home", text="Home").props("flat")
             with ui.link(target="/config"):
                 ui.button(icon="settings", text="Config").props("flat")
             with ui.element("a").classes(
-                "flex flex-row text-lg text-black gap-1 hover:bg-slate-100 p-2 px-4 rounded-xl"
+                "flex flex-row text-lg text-black gap-1 hover:bg-slate-100 p-2 px-4 rounded"
             ) as link:
                 link._props["href"] = "/"
                 link._props["target"] = "_blank"

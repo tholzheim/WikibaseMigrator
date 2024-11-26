@@ -46,7 +46,7 @@ def get_profile_path(name: str) -> Path:
 @app.command(
     name="app",
 )
-def webserver_app(
+def native_app(
     config: Annotated[
         str,
         typer.Option(help="The configuration file defining the Wikibases", autocompletion=complete_profile_paths),
@@ -63,6 +63,21 @@ def webserver_app(
     )
 
 
+@app.command(
+    name="webserver",
+)
+def webserver_app(
+    config: Annotated[
+        str,
+        typer.Option(help="The configuration file defining the Wikibases", autocompletion=complete_profile_paths),
+    ],
+    host: Annotated[str, typer.Option(help="host of the webserver")] = "0.0.0.0",
+    port: Annotated[int, typer.Option(help="port of the webserver")] = 8080,
+):
+    profile_path = get_profile_path(config)
+    Webserver(profile_path, DEFAULT_ICON_PATH).run(host=host, port=port, reload=False)
+
+
 @app.command()
 def migrate(
     config: Annotated[
@@ -76,9 +91,9 @@ def migrate(
         typer.Option(help="The query querying the items to migrate. The items to migrate must have the binding ?items"),
     ] = None,
     query_file: Annotated[
-        Path | None,
+        str | None,
         typer.Option(
-            help=f"The query file with a query querying the items to migrate. The items to migrate must have the binding ?{ITEM_QUERY_VARIABLE}"  # noqa: E501
+            help=f"The query file with a query querying the items to migrate. The items to migrate must have the binding ?{config.ITEM_QUERY_VARIABLE}"  # noqa: E501
         ),
     ] = None,
     show_details: Annotated[bool, typer.Option(help="Show detailed information during the migration process")] = False,
@@ -100,6 +115,8 @@ def migrate(
     console.print(f"Loaded profile: {profile.name}")
 
     if entity is None:
+        if isinstance(query_file, str):
+            query_file = Path(query_file)
         query_str = resolve_query_params(query, query_file)
         entities = select_entities_from_query(query_str, profile=profile, progress=progress)
     else:
