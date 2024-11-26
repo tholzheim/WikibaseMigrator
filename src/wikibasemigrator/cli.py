@@ -118,9 +118,12 @@ def migrate(
     console.print(f"Loaded profile: {profile.name}")
 
     if entity is None:
+        query_path: Path | None
         if isinstance(query_file, str):
-            query_file = Path(query_file)
-        query_str = resolve_query_params(query, query_file)
+            query_path = Path(query_file)
+        else:
+            query_path = query_file
+        query_str = resolve_query_params(query=query, query_file=query_path)
         entities = select_entities_from_query(query_str, profile=profile, progress=progress)
     else:
         entities = entity
@@ -162,8 +165,8 @@ def migrate(
 
 def show_translation_details(
     translations: EntitySetTranslationResult,
-    source_labels: dict[str, str],
-    target_labels: dict[str, str],
+    source_labels: dict[str, str | None],
+    target_labels: dict[str, str | None],
     profile: WikibaseMigrationProfile,
 ):
     """
@@ -196,7 +199,7 @@ def translate_entities(entities: list[str], migrator, progress: Progress) -> Ent
 
 def _query_source_labels(
     translations: EntitySetTranslationResult, profile: WikibaseMigrationProfile, progress: Progress
-) -> dict[str, str]:
+) -> dict[str, str | None]:
     """
     Query source labels
     :return:
@@ -208,18 +211,19 @@ def _query_source_labels(
             entity_ids=translations.get_target_entity_ids(),
             item_prefix=profile.target.item_prefix,
         )
-        target_labels = {label["qid"]: label.get("label") for label in lod}
+        target_labels = {label["qid"]: label.get("label") for label in lod if isinstance(label.get("label"), str)}
         progress.update(target_label_task, completed=1)
     return target_labels
 
 
 def _query_target_labels(
     translations: EntitySetTranslationResult, profile: WikibaseMigrationProfile, progress: Progress
-) -> dict[str, str]:
+) -> dict[str, str | None]:
     """
     Query target labels
     :return:
     """
+    source_labels = {}
     with progress:
         source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
         lod = Query.get_entity_label(
@@ -227,7 +231,7 @@ def _query_target_labels(
             entity_ids=translations.get_source_entity_ids(),
             item_prefix=profile.source.item_prefix,
         )
-        source_labels = {label["qid"]: label.get("label") for label in lod}
+        source_labels = {label["qid"]: label.get("label") for label in lod if isinstance(label.get("label"), str)}
         progress.update(source_label_task, completed=1)
     return source_labels
 
@@ -293,8 +297,8 @@ def show_translation_result(translations: EntitySetTranslationResult):
 
 def show_applied_mappings(
     translations: EntitySetTranslationResult,
-    source_labels: dict[str, str],
-    target_labels: dict[str, str],
+    source_labels: dict[str, str | None],
+    target_labels: dict[str, str | None],
     profile: WikibaseMigrationProfile,
 ):
     """
@@ -318,7 +322,7 @@ def show_applied_mappings(
 
 
 def show_missing_items(
-    translations: EntitySetTranslationResult, source_labels: dict[str, str], profile: WikibaseMigrationProfile
+    translations: EntitySetTranslationResult, source_labels: dict[str, str | None], profile: WikibaseMigrationProfile
 ):
     """
     show table of missing items
@@ -332,7 +336,7 @@ def show_missing_items(
 
 
 def show_missing_properties(
-    translations: EntitySetTranslationResult, source_labels: dict[str, str], profile: WikibaseMigrationProfile
+    translations: EntitySetTranslationResult, source_labels: dict[str, str | None], profile: WikibaseMigrationProfile
 ):
     """
     show table of missing properties

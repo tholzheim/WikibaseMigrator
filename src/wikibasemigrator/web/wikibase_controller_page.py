@@ -43,6 +43,9 @@ class WikibaseControllerPage(Webpage):
         :return:
         """
         super().setup_ui()
+        if self.container is None:
+            logger.error("Abort setup container not yet setup")
+            return
         with self.container:
             ui.label(self.profile.name).classes("text-4xl font-bold text-center p-2")
             with ui.element("div").classes("flex flex-row mx-auto text-xl"):

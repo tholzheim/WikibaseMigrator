@@ -10,7 +10,7 @@ logging.basicConfig(level=os.environ.get("LOGGING_LEVEL", "INFO"))
 webserver = Webserver(profile_path, DEFAULT_ICON_PATH)
 webserver.run(
     host=os.environ.get("WEBSERVER_HOST", "0.0.0.0"),
-    port=os.environ.get("WEBSERVER_PORT", 8080),
+    port=int(os.environ.get("WEBSERVER_PORT", 8080)),
     storage_secret=os.environ.get("STORAGE_SECRET"),
     reload=False,
 )
