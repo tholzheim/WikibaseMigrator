@@ -81,4 +81,5 @@ class Webpage:
 
     def logout(self):
         app.storage.user["token"] = None
+        app.storage.user["user"] = None
         ui.navigate.to("/", new_tab=False)
