@@ -79,7 +79,7 @@ class QuickStatementsGenerator:
         lines.extend(self._get_label_lines(item))
         lines.extend(self._get_description_lines(item))
         lines.extend(self._get_aliases_lines(item))
-        if item.ETYPE in WikibaseEntityTypes.support_sidelinks():
+        if item.ETYPE in WikibaseEntityTypes.support_sitelinks():
             lines.extend(self._get_sidelink_lines(item))
         lines.extend(self._get_statement_lines(item))
         # ToDo: ADD support for lexemes

@@ -65,6 +65,8 @@ class TranslationView:
     """
 
     EXPANSION_STYLE = "ring-1 rounded w-full"
+    ROW_STYLE = "flex flex-row gap-2"
+    CENTERED_HEADLINE_STYLE = "text-xl mx-auto"
 
     def __init__(
         self,
@@ -131,7 +133,7 @@ class TranslationView:
         display migration controls
         :return:
         """
-        with ui.element("div").classes("container flex flex-row gap-2 w"):
+        with ui.element("div").classes("container " + self.ROW_STYLE):
             ui.input(label="summary", placeholder="Migrated items for...").bind_value(self, "summary").classes("grow")
             ui.button(text="Migrate", on_click=self.migrate).classes("max-w-1/3")
 
@@ -162,18 +164,18 @@ class TranslationView:
         qs_icon = Path(__file__).parent.joinpath("../resources/Commons_to_Wikidata_QuickStatements.svg")
         with ui.expansion(text="QuickStatements", group="group").classes(self.EXPANSION_STYLE) as expansion:
             with expansion.add_slot("header"):
-                with ui.element("div").classes("flex flex-row gap-2 items-center"):
+                with ui.element("div").classes("items-center " + self.ROW_STYLE):
                     if self.profile.target.quickstatement_url is not None:
                         ui.html(qs_icon.read_text())
                     ui.label("QuickStatements")
             with ui.element("div").classes("flex flex-col gap-2 container"):
-                with ui.element("div").classes("flex flex-row gap-2"):
+                with ui.element("div").classes(self.ROW_STYLE):
                     if self.profile.target.quickstatement_url is not None:
                         with ui.link(
                             target=self.profile.target.quickstatement_url.unicode_string(),
                             new_tab=True,
                         ) as link:
-                            link.classes("flex flex-row gap-2")
+                            link.classes(self.ROW_STYLE)
                             ui.label("Open Quickstatements Endpoint")
                     ui.element("div").classes("grow")
                     ui.button(
@@ -287,8 +289,8 @@ class TranslationView:
             )
             csv_rows.append({"id": entity_id, "label": label, "link": url})
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            with ui.element("div").classes("flex flex-row gap-2"):
-                ui.label(f"Missing Properties {len(values)}").classes("text-xl mx-auto")
+            with ui.element("div").classes(self.ROW_STYLE):
+                ui.label(f"Missing Properties {len(values)}").classes(self.CENTERED_HEADLINE_STYLE)
                 with ui.dropdown_button("Download", auto_close=True):
                     ui.item(
                         "table (.csv)",
@@ -337,8 +339,8 @@ class TranslationView:
             )
             csv_rows.append({"id": entity_id, "label": label, "link": url})
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            with ui.element("div").classes("flex flex-row gap-2"):
-                ui.label(f"Missing Items {len(values)}").classes("text-xl mx-auto")
+            with ui.element("div").classes(self.ROW_STYLE):
+                ui.label(f"Missing Items {len(values)}").classes(self.CENTERED_HEADLINE_STYLE)
                 with ui.dropdown_button("Download", auto_close=True):
                     ui.item(
                         "table (.csv)",
@@ -424,7 +426,7 @@ class TranslationView:
                 }
             )
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
-            ui.label("Translation result").classes("text-xl mx-auto")
+            ui.label("Translation result").classes(self.CENTERED_HEADLINE_STYLE)
             ui.label(f"Creating {created_new_counter} new entity entries")
             ui.label(f"Merging {merge_counter} entities with existing entries")
             ui.aggrid(

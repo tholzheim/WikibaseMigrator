@@ -11,12 +11,16 @@ from string import Template
 import requests
 from pydantic import HttpUrl
 from SPARQLWrapper import JSON, POST, SPARQLWrapper
+from wikibaseintegrator import __version__
 
 logger = logging.getLogger(__name__)
 
 
 def get_default_user_agent() -> str:
-    return "WikibaseMigrator/1.0 (https://www.wikidata.org/wiki/User:tholzheim)"
+    """
+    Get default user agent
+    """
+    return f"WikibaseMigrator/{__version__}"
 
 
 class Query:
@@ -28,14 +32,14 @@ class Query:
     def get_item_label(
         cls,
         endpoint_url: HttpUrl,
-        item_ids: list[str],
+        entity_ids: list[str],
+        item_prefix: HttpUrl,
         language: str | None = None,
-        item_prefix: HttpUrl = "http://www.wikidata.org/entity/",
     ) -> list[dict]:
         """
-        Get the labels for the given items
+        Get the labels for the given entities
         :param endpoint_url:
-        :param item_ids:
+        :param entity_ids:
         :param language: if None english will be used
         :param item_prefix:
         :return:
@@ -54,7 +58,7 @@ class Query:
         if language is None:
             language = "en"
         query_template = Template(query_raw.safe_substitute(language=language, item_prefix=item_prefix))
-        values = [f'"{item}"' for item in item_ids]
+        values = [f'"{entity_id}"' for entity_id in entity_ids]
         lod = cls.execute_values_query_in_chunks(
             query_template=query_template,
             param_name="entity_ids",
@@ -103,7 +107,7 @@ class Query:
     @classmethod
     def execute_query(cls, query: str, endpoint_url: HttpUrl) -> list[dict]:
         """
-        Execute given qquery against given endpoint
+        Execute given query against given endpoint
         :param query:
         :param endpoint_url:
         :return:
@@ -218,8 +222,8 @@ class WikibaseEntityTypes(str, Enum):
     MEDIAINFO = "mediainfo"
 
     @classmethod
-    def support_sidelinks(cls) -> list["WikibaseEntityTypes"]:
+    def support_sitelinks(cls) -> list["WikibaseEntityTypes"]:
         """
-        Returns list of Wikibase types which support sidelinks
+        Returns list of Wikibase types which support sitelinks
         """
         return [WikibaseEntityTypes.ITEM]

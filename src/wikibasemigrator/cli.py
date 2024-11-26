@@ -185,7 +185,7 @@ def _query_source_labels(
         target_label_task = progress.add_task("[green]Querying target labels...", total=1, completed=1)
         lod = Query.get_item_label(
             endpoint_url=profile.target.sparql_url,
-            item_ids=translations.get_target_entity_ids(),
+            entity_ids=translations.get_target_entity_ids(),
             item_prefix=profile.target.item_prefix,
         )
         target_labels = {label["qid"]: label.get("label") for label in lod}
@@ -204,7 +204,7 @@ def _query_target_labels(
         source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
         lod = Query.get_item_label(
             endpoint_url=profile.source.sparql_url,
-            item_ids=translations.get_source_entity_ids(),
+            entity_ids=translations.get_source_entity_ids(),
             item_prefix=profile.source.item_prefix,
         )
         source_labels = {label["qid"]: label.get("label") for label in lod}

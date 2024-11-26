@@ -497,7 +497,7 @@ class WikibaseMigrator:
         :return:
         """
 
-        if source.ETYPE in WikibaseEntityTypes.support_sidelinks():
+        if source.ETYPE in WikibaseEntityTypes.support_sitelinks():
             for sitelink in source.sitelinks.sitelinks.values():
                 if sitelink.site not in allowed_sitelinks:
                     continue
@@ -694,7 +694,7 @@ class WikibaseMigrator:
                 return
         match back_reference.reference_type:
             case EntityBackReferenceType.SITELINK:
-                if entity.ETYPE in WikibaseEntityTypes.support_sidelinks():
+                if entity.ETYPE in WikibaseEntityTypes.support_sitelinks():
                     entity.sitelinks.set(site=back_reference.property_id, title=source_id)
                 else:
                     logger.warning(f"Type {entity.ETYPE} does not support sidelinks define a different back reference")
