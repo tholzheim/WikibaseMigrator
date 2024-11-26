@@ -1,3 +1,7 @@
+[![GitHub license](https://img.shields.io/github/license/tholzheim/WikibaseMigrator?color=orange)](https://github.com/tholzheim/WikibaseMigrator/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/tholzheim/WikibaseMigrator?color=blue)](https://github.com/tholzheim/WikibaseMigrator/issues)
+[![Actions status](https://github.com/tholzheim/WikibaseMigrator/workflows/CI/badge.svg)](https://github.com/tholzheim/WikibaseMigrator/actions)
+[![image](https://img.shields.io/pypi/pyversions/WikibaseMigrator.svg)](https://pypi.python.org/pypi/WikibaseMigrator)
 # <img src="./src/wikibasemigrator/resources/logo.svg" width="48"> Wikibase Migrator
 
 WikibaseMigrator is a tool to migrate wikibase entities from one wikibase instance to another. 
@@ -31,18 +35,21 @@ After installing the project cli is available under the name `ẁbmigrate`
 wbmigrate --help
 ```
 ```commandline
- Usage: wbmigrate [OPTIONS] COMMAND [ARGS]...                                                                                                           
-                                                                                                                                                        
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --install-completion          Install completion for the current shell.                                                                              │
-│ --show-completion             Show completion for the current shell, to copy it or customize the installation.                                       │
-│ --help                        Show this message and exit.                                                                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ app         Run the WikibaseMigrator web server as local app Note: Experimental feature as some of the imported resources are not localized yet      │
-│ webserver                                                                                                                                            │
-│ migrate     Migrate the provided entities                                                                                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: wbmigrate [OPTIONS] COMMAND [ARGS]...                                                                 
+                                                                                                              
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.                                    │
+│ --show-completion             Show completion for the current shell, to copy it or customize the           │
+│                               installation.                                                                │
+│ --help                        Show this message and exit.                                                  │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ app         Run the WikibaseMigrator web server as local app Note: Experimental feature as some of the     │
+│             imported resources are not localized yet                                                       │
+│ webserver   Start the WikibaseMigrator web server                                                          │
+│ migrate     Migrate the provided entities                                                                  │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 
 ```
 
@@ -51,21 +58,32 @@ wbmigrate --help
 wbmigrate migrate --help
 ```
 ```commandline
- Usage: wbmigrate migrate [OPTIONS]                                                                                                                                         
-                                                                                                                                                                            
- Migrate the provided entities                                                                                                                                              
-                                                                                                                                                                            
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --config                               TEXT  The configuration file defining the Wikibases [default: None] [required]                                                 │
-│ *  --summary                              TEXT  Summary message to add to the wikibase edits [default: None] [required]                                                  │
-│    --entity                               TEXT  The items to migrate [default: None]                                                                                     │
-│    --query                                TEXT  The query querying the items to migrate. The items to migrate must have the binding ?items [default: None]               │
-│    --query-file                           PATH  The query file with a query querying the items to migrate. The items to migrate must have the binding ?item              │
-│                                                 [default: None]                                                                                                          │
-│    --show-details    --no-show-details          Show detailed information during the migration process [default: no-show-details]                                        │
-│    --force           --no-force                 If True migrate items directly to target wikibase [default: no-force]                                                    │
-│    --help                                       Show this message and exit.                                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: wbmigrate migrate [OPTIONS]                                                                           
+                                                                                                              
+ Migrate the provided entities                                                                                
+                                                                                                              
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --config                               TEXT  The configuration file defining the Wikibases              │
+│                                                 [default: None]                                            │
+│                                                 [required]                                                 │
+│ *  --summary                              TEXT  Summary message to add to the wikibase edits               │
+│                                                 [default: None]                                            │
+│                                                 [required]                                                 │
+│    --entity                               TEXT  The items to migrate [default: None]                       │
+│    --query                                TEXT  The query querying the items to migrate. The items to      │
+│                                                 migrate must have the binding ?items                       │
+│                                                 [default: None]                                            │
+│    --query-file                           TEXT  The query file with a query querying the items to migrate. │
+│                                                 The items to migrate must have the binding ?item           │
+│                                                 [default: None]                                            │
+│    --show-details    --no-show-details          Show detailed information during the migration process     │
+│                                                 [default: no-show-details]                                 │
+│    --force           --no-force                 If True migrate items directly to target wikibase          │
+│                                                 [default: no-force]                                        │
+│    --help                                       Show this message and exit.                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
 ```
 
 ### wbmigrate webserver
@@ -74,19 +92,18 @@ wbmigrate migrate --help
 wbmigrate webserver --help
 ```
 ```commandline
- Usage: wbmigrate webserver [OPTIONS]
- 
- Start the WikibaseMigrator web server                                                                                                                    
-                                                                                                                                                        
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --config        TEXT     The configuration file defining the Wikibases [default: None] [required]                                                 │
-│    --host          TEXT     host of the webserver [default: 0.0.0.0]                                                                                 │
-│    --port          INTEGER  port of the webserver [default: 8080]                                                                                    │
-│    --help                   Show this message and exit.                                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-
+ Usage: wbmigrate webserver [OPTIONS]                                                                         
+                                                                                                              
+ Start the WikibaseMigrator web server                                                                        
+                                                                                                              
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --config        TEXT     The configuration file defining the Wikibases [default: None] [required]       │
+│    --host          TEXT     host of the webserver [default: 0.0.0.0]                                       │
+│    --port          INTEGER  port of the webserver [default: 8080]                                          │
+│    --help                   Show this message and exit.                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
 # Migration Pipeline
 ```mermaid
 flowchart TD
