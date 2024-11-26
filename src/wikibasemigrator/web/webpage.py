@@ -51,7 +51,7 @@ class Webpage:
             with ui.element("a").classes(
                 "flex flex-row text-lg text-black gap-1 hover:bg-slate-100 p-2 px-4 rounded"
             ) as link:
-                link._props["href"] = "/"
+                link._props["href"] = "https://github.com/tholzheim/WikibaseMigrator"
                 link._props["target"] = "_blank"
                 ui.html(
                     content="""
