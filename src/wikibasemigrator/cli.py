@@ -74,6 +74,9 @@ def webserver_app(
     host: Annotated[str, typer.Option(help="host of the webserver")] = "0.0.0.0",
     port: Annotated[int, typer.Option(help="port of the webserver")] = 8080,
 ):
+    """
+    Start the WikibaseMigrator web server
+    """
     profile_path = get_profile_path(config)
     Webserver(profile_path, DEFAULT_ICON_PATH).run(host=host, port=port, reload=False)
 
