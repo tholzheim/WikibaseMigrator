@@ -177,4 +177,4 @@ This project was funded by [FactGrid](https://database.factgrid.de)
 
 
 # Licence <a id="license"></a>
-This repository is licensed under the [Apache 2.0]()
+This repository is licensed under the [Apache 2.0](./LICENSE)
