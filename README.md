@@ -1,6 +1,6 @@
-[![GitHub license](https://img.shields.io/github/license/tholzheim/WikibaseMigrator?color=orange)](https://github.com/tholzheim/WikibaseMigrator/blob/master/LICENSE)
+[![GitHub License](https://img.shields.io/github/license/tholzheim/WikibaseMigrator)](https://github.com/tholzheim/WikibaseMigrator/blob/master/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/tholzheim/WikibaseMigrator?color=blue)](https://github.com/tholzheim/WikibaseMigrator/issues)
-[![Actions status](https://github.com/tholzheim/WikibaseMigrator/workflows/CI/badge.svg)](https://github.com/tholzheim/WikibaseMigrator/actions)
+[![Actions status](https://github.com/tholzheim/WikibaseMigrator/actions/workflows/CI.yml/badge.svg)](https://github.com/tholzheim/WikibaseMigrator/actions)
 [![image](https://img.shields.io/pypi/pyversions/WikibaseMigrator.svg)](https://pypi.python.org/pypi/WikibaseMigrator)
 # <img src="./src/wikibasemigrator/resources/logo.svg" width="48"> Wikibase Migrator
 
