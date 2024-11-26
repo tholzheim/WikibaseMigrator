@@ -26,25 +26,25 @@ mapping:
   location_of_mapping: target
   item_mapping_query: |
     PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      ?factgrid_item wdt:P10 ?source_item.
-      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_item)
+      ?factgrid_item wdt:P10 ?source_entity.
+      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_entity)
     }
   property_mapping_query: |
     PREFIX wdt: <https://wbmigration-test.wikibase.cloud/prop/direct/>
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      ?factgrid_item wdt:P8 ?source_item.
-      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_item)
+      ?factgrid_item wdt:P8 ?source_entity.
+      BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_entity)
     }
 back_reference:
   item:

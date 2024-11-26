@@ -23,27 +23,27 @@ mapping:
   location_of_mapping: target
   item_mapping_query: |
     PREFIX schema: <http://schema.org/>
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      BIND(IRI(CONCAT("https://www.wikidata.org/wiki/", STR( ?source_item))) as ?wd_qid)
+      BIND(IRI(CONCAT("https://www.wikidata.org/wiki/", STR( ?source_entity))) as ?wd_qid)
       ?wd_qid schema:isPartOf <https://www.wikidata.org/>.
       ?wd_qid schema:about ?factgrid_item.
-      BIND(STRAFTER(STR(?factgrid_item), "https://database.factgrid.de/entity/") AS ?target_item)
+      BIND(STRAFTER(STR(?factgrid_item), "https://database.factgrid.de/entity/") AS ?target_entity)
     }
   property_mapping_query: |
     PREFIX wdt: <https://database.factgrid.de/prop/direct/>
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      ?factgrid_item wdt:P343 ?source_item.
-      BIND(STRAFTER(STR(?factgrid_item), "https://database.factgrid.de/entity/") AS ?target_item)
+      ?factgrid_item wdt:P343 ?source_entity.
+      BIND(STRAFTER(STR(?factgrid_item), "https://database.factgrid.de/entity/") AS ?target_entity)
     }
   languages: ["de", "en"]
   sitelinks: ["wikidatawiki", "dewiki", "enwiki"]

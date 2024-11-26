@@ -25,26 +25,26 @@ target:
 mapping:
   location_of_mapping: target
   item_mapping_query: |
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      BIND(IRI(CONCAT("https://www.wikidata.org/wiki/", STR( ?source_item))) as ?wd_qid)
+      BIND(IRI(CONCAT("https://www.wikidata.org/wiki/", STR( ?source_entity))) as ?wd_qid)
       ?wd_qid schema:isPartOf <https://www.wikidata.org/>.
       ?wd_qid schema:about ?factgrid_item.
-      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_item)
+      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_entity)
     }
   property_mapping_query: |
-    SELECT ?source_item ?target_item
+    SELECT ?source_entity ?target_entity
     WHERE{
 
-      VALUES ?source_item {
-        $source_items
+      VALUES ?source_entity {
+        $source_entities
       }
-      ?factgrid_item wdt:P2 ?source_item.
-      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_item)
+      ?factgrid_item wdt:P2 ?source_entity.
+      BIND(STRAFTER(STR(?factgrid_item), "http://wikibase.wikibasetest.com/entity/") AS ?target_entity)
     }
 back_reference:
   item:
