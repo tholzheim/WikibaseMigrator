@@ -8,6 +8,7 @@ import pandas as pd
 from nicegui import run, ui
 from nicegui.events import ValueChangeEventArguments
 
+from wikibasemigrator import config
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.wikibase import Query
 
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class WikibaseItemSelector(ABC):
     """
-    abstract class the defining the wikibase item selection interface
+    abstract class the defining the wikibase entity selection interface
     """
 
     def __init__(self, profile: WikibaseMigrationProfile, selection_callback: Callable[[list[str]], Awaitable[None]]):
@@ -31,19 +32,19 @@ class WikibaseItemSelector(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_selected_items(self) -> list[str]:
+    def get_selected_entities(self) -> list[str]:
         """
-        Get selected items
-        :return: list of the selected items
+        Get selected entities
+        :return: list of the selected entities
         """
         raise NotImplementedError
 
     async def handle_selection_callback(self):
         """
         Handle the selection callback
-        :param selected_ids: list of selected items
+        :param selected_ids: list of selected entities
         """
-        await self.selection_callback(self.get_selected_items())
+        await self.selection_callback(self.get_selected_entities())
 
 
 class ItemSelectorElement(WikibaseItemSelector):
@@ -66,20 +67,20 @@ class ItemSelectorElement(WikibaseItemSelector):
         """
         with ui.element("div") as container:
             container.classes("flex flex-col gap-2")
-            ui.label("Provide a list of items to translate. The list of items must be comma seperated.")
-            item_input = ui.input(
+            ui.label("Provide a list of entities to translate. The list of entities must be comma seperated.")
+            entity_input = ui.input(
                 label="Item IDs",
                 placeholder="e.g. Q1,Q123,Q423,...",
                 on_change=self._handle_value_change,
                 validation={"InvalidFormat": self._validate_value},
             )
-            item_input.classes("w-full rounded-md  hover:border-blue-500 border-blue-200")
-            item_input.props("clearable").props("outlined")
-            item_input.bind_value(self)
-            item_input.on("keydown.enter", self.handle_selection_callback)
+            entity_input.classes("w-full rounded-md  hover:border-blue-500 border-blue-200")
+            entity_input.props("clearable").props("outlined")
+            entity_input.bind_value(self)
+            entity_input.on("keydown.enter", self.handle_selection_callback)
             ui.button("Translate", on_click=self.handle_selection_callback)
 
-            ui.label("Selected items:")
+            ui.label("Selected entities:")
             with ui.element(tag="div"):
                 columns = [
                     {"name": "qid", "label": "Qid", "field": "qid", "required": True, "align": "left"},
@@ -103,7 +104,7 @@ class ItemSelectorElement(WikibaseItemSelector):
         """
         return self._validate_value(self.value)
 
-    def get_selected_items(self) -> list[str]:
+    def get_selected_entities(self) -> list[str]:
         if self.value_is_valid():
             return self.value.strip().split(self.SEPERATOR)
         else:
@@ -130,8 +131,8 @@ class ItemSelectorElement(WikibaseItemSelector):
             values = self.value.split(self.SEPERATOR)
             worker = asyncio.create_task(
                 run.io_bound(
-                    callback=Query.get_item_label,
-                    item_ids=values,
+                    callback=Query.get_entity_label,
+                    entity_ids=values,
                     endpoint_url=self.profile.source.sparql_url,
                     item_prefix=self.profile.source.item_prefix,
                 )
@@ -147,10 +148,8 @@ class ItemSelectorElement(WikibaseItemSelector):
 
 class QueryItemSelectorElement(WikibaseItemSelector):
     """
-    Allows to select items by providing a query
+    Allows to select entities by providing a query
     """
-
-    ITEM_QUERY_VARIABLE = "item"
 
     def __init__(self, profile: WikibaseMigrationProfile, selection_callback: Callable[[list[str]], Awaitable[None]]):
         """
@@ -168,7 +167,9 @@ class QueryItemSelectorElement(WikibaseItemSelector):
         """
         with ui.element("div") as container:
             container.classes("flex flex-col gap-2")
-            ui.label("The SPARQL query must bind the items to translate to the variable ?item.")
+            ui.label(
+                f"The SPARQL query must bind the ID of the entities to translate to the variable ?{config.ITEM_QUERY_VARIABLE}."  # noqa: E501
+            )
             with ui.element("div") as div:
                 div.classes("w-full h-min-1/2")
                 editor = ui.codemirror(language="SPARQL", theme="githubLight")
@@ -202,18 +203,19 @@ class QueryItemSelectorElement(WikibaseItemSelector):
         else:
             ui.notify("Query has no results", color="warning")
 
-    def get_selected_items(self) -> list[str]:
+    def get_selected_entities(self) -> list[str]:
         """
-        Get selected items
+        Get selected entities
         """
         if self.result is None:
             return []
-        item_ids_with_none: list[str | None] = [record.get(self.ITEM_QUERY_VARIABLE) for record in self.result]
-        item_ids_with_prefix: list[str] = [item_id for item_id in item_ids_with_none if item_id is not None]
-        item_ids = [
-            item_id.removeprefix(self.profile.source.item_prefix.unicode_string()) for item_id in item_ids_with_prefix
+        entity_ids_with_none: list[str | None] = [record.get(config.ITEM_QUERY_VARIABLE) for record in self.result]
+        entity_ids_with_prefix: list[str] = [entity_id for entity_id in entity_ids_with_none if entity_id is not None]
+        entity_ids = [
+            entity_id.removeprefix(self.profile.source.item_prefix.unicode_string())
+            for entity_id in entity_ids_with_prefix
         ]
-        return item_ids
+        return entity_ids
 
     def display_result(self) -> None:
         """
@@ -227,8 +229,8 @@ class QueryItemSelectorElement(WikibaseItemSelector):
                 valid_result = True
                 with ui.element(tag="div").classes("flex flex-row gap-2"):
                     ui.label(f"{len(self.result)} results").classes("bg-green rounded-full px-2 py-1 flex-none")
-                    if self.ITEM_QUERY_VARIABLE not in df.columns:
-                        ui.label(f"?{self.ITEM_QUERY_VARIABLE} variable missing").classes(
+                    if config.ITEM_QUERY_VARIABLE not in df.columns:
+                        ui.label(f"?{config.ITEM_QUERY_VARIABLE} variable missing").classes(
                             "bg-red rounded-full px-2 py-1 flex-none"
                         )
                         valid_result = False

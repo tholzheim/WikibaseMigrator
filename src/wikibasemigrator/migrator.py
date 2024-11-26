@@ -72,7 +72,7 @@ class WikibaseMigrator:
             for future in as_completed(futures):
                 entity_chunk = future.result()
                 result.extend(entity_chunk)
-        logger.debug(len(result))
+        logger.debug(f"Retrieved {len(result)} entity records")
         return result
 
     @staticmethod

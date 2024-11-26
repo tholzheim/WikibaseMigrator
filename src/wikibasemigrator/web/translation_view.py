@@ -214,8 +214,8 @@ class TranslationView:
         """
         logger.info("Fetching source labels...")
         source_labels_raw = await run.io_bound(
-            callback=Query.get_item_label,
-            item_ids=self.translations.get_source_entity_ids(),
+            callback=Query.get_entity_label,
+            entity_ids=self.translations.get_source_entity_ids(),
             endpoint_url=self.profile.source.sparql_url,
             item_prefix=self.profile.source.item_prefix,
             language=None,
@@ -223,8 +223,8 @@ class TranslationView:
         self.source_labels = {label["qid"]: label.get("label") for label in source_labels_raw}
         logger.info("Fetching target labels...")
         target_labels_raw = await run.io_bound(
-            callback=Query.get_item_label,
-            item_ids=self.translations.get_target_entity_ids(),
+            callback=Query.get_entity_label,
+            entity_ids=self.translations.get_target_entity_ids(),
             endpoint_url=self.profile.target.sparql_url,
             item_prefix=self.profile.target.item_prefix,
             language=None,

@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from string import Template
 
-from wikibasemigrator import wikibase
+from wikibasemigrator import config, wikibase
 from wikibasemigrator.model.profile import WikibaseConfig, WikibaseMigrationProfile
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class WikibaseItemMapper:
                 logger.debug(f"Querying {id_type} mappings for {len(id_values)} IDs")
                 lod = wikibase.Query.execute_values_query_in_chunks(
                     query_template=query_template,
-                    param_name="source_items",
+                    param_name=config.MAPPING_QUERY_VALUES_INPUT_VARIABLE,
                     values=source_items,
                     endpoint_url=self.wikibase_config.sparql_url,
                 )
@@ -62,8 +62,8 @@ class WikibaseItemMapper:
         :return:
         """
         for record in lod:
-            source = record.get("source_item", None)
-            target = record.get("target_item", None)
+            source = record.get(config.MAPPING_QUERY_SOURCE_VARIABLE, None)
+            target = record.get(config.MAPPING_QUERY_TARGET_VARIABLE, None)
             if isinstance(source, str) and isinstance(target, str):
                 self.mappings[source] = target
 

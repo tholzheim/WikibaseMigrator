@@ -29,7 +29,7 @@ class Query:
     """
 
     @classmethod
-    def get_item_label(
+    def get_entity_label(
         cls,
         endpoint_url: HttpUrl,
         entity_ids: list[str],

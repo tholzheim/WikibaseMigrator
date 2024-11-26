@@ -9,6 +9,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.progress import open as rich_open
 from rich.table import Table
 
+from wikibasemigrator import config
 from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import WikibaseMigrationProfile, load_profile
 from wikibasemigrator.model.translations import EntitySetTranslationResult
@@ -18,7 +19,6 @@ from wikibasemigrator.wikibase import Query
 app = typer.Typer()
 console = get_console()
 DEFAULT_PROFILE_PATH = Path().home().joinpath(".config/WikibaseMigrator/profiles")
-ITEM_QUERY_VARIABLE = "item"
 
 STYLE_ERROR_MSG = "bold red"
 
@@ -183,7 +183,7 @@ def _query_source_labels(
     """
     with progress:
         target_label_task = progress.add_task("[green]Querying target labels...", total=1, completed=1)
-        lod = Query.get_item_label(
+        lod = Query.get_entity_label(
             endpoint_url=profile.target.sparql_url,
             entity_ids=translations.get_target_entity_ids(),
             item_prefix=profile.target.item_prefix,
@@ -202,7 +202,7 @@ def _query_target_labels(
     """
     with progress:
         source_label_task = progress.add_task("[green]Querying source labels...", total=1, completed=1)
-        lod = Query.get_item_label(
+        lod = Query.get_entity_label(
             endpoint_url=profile.source.sparql_url,
             entity_ids=translations.get_source_entity_ids(),
             item_prefix=profile.source.item_prefix,
@@ -241,7 +241,9 @@ def select_entities_from_query(query: str, profile: WikibaseMigrationProfile, pr
     with progress:
         query_task = progress.add_task("[green]Querying entities...", total=1, completed=1)
         lod = Query.execute_query(query=query, endpoint_url=profile.source.sparql_url)
-        entities_with_prefix = [d.get(ITEM_QUERY_VARIABLE) for d in lod if d.get(ITEM_QUERY_VARIABLE, None)]
+        entities_with_prefix = [
+            d.get(config.ITEM_QUERY_VARIABLE) for d in lod if d.get(config.ITEM_QUERY_VARIABLE, None)
+        ]
         entities = [
             entity_id.replace(profile.source.item_prefix.unicode_string(), "")
             for entity_id in entities_with_prefix

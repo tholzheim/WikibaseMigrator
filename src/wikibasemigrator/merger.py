@@ -97,7 +97,8 @@ class EntityMerger:
             if merge_with_claim:
                 self._merge_claim(source_claim, merge_with_claim)
             else:
-                # ToDo: Implement merging of statements and report issue in wikibase integrator → create test case and prepare fix
+                # ToDo: Implement merging of statements and report issue in wikibase integrator
+                #  → create test case and prepare fix
                 # Issue: if snak value is unknown → KeyError
                 target.claims.add(source_claim, action_if_exists=ActionIfExists.MERGE_REFS_OR_APPEND)
         for target_claim in target.claims:
