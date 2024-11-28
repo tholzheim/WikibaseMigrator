@@ -24,6 +24,7 @@ class Webpage:
         self.container: ui.element | None = None
 
     def setup_ui(self):
+        ui.colors(primary="#2c4e80ff")
         self.setup_header()
         self.setup_footer()
         self.container = ui.element(tag="div").classes("container flex flex-col mx-auto w-full h-full flex p-2")
