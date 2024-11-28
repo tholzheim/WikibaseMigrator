@@ -9506,12 +9506,11 @@
               ]
            }
         ],
-        "P2963":[
+        "P2037":[
            {
               "mainsnak":{
                  "snaktype":"value",
-                 "property":"P2963",
-                 "hash":"17bd00fa88088c78f4d1ce327070286add4c1d47",
+                 "property":"P2037",
                  "datavalue":{
                     "value":"428754",
                     "type":"string"
@@ -9524,7 +9523,6 @@
                     {
                        "snaktype":"value",
                        "property":"P585",
-                       "hash":"018c1ddca64c0ac333881fcad94646d8efaa31df",
                        "datavalue":{
                           "value":{
                              "time":"+2020-09-27T00:00:00Z",
@@ -9543,7 +9541,6 @@
                     {
                        "snaktype":"value",
                        "property":"P1810",
-                       "hash":"fcb4940b4d4810dd4cefbac52d244af038a6e4f2",
                        "datavalue":{
                           "value":"Tim Berners-Lee",
                           "type":"string"
@@ -9551,15 +9548,14 @@
                        "datatype":"string"
                     }
                  ],
-                 "P3744":[
+                 "P1545":[
                     {
                        "snaktype":"value",
-                       "property":"P3744",
-                       "hash":"91b963a6de230f130f1a032fb40e98f9c64b535f",
+                       "property":"P1545",
                        "datavalue":{
                           "value":{
                              "amount":"+44",
-                             "unit":"1"
+                             "unit":"http://www.wikidata.org/entity/Q4916"
                           },
                           "type":"quantity"
                        },
@@ -9570,7 +9566,7 @@
               "qualifiers-order":[
                  "P585",
                  "P1810",
-                 "P3744"
+                 "P1545"
               ],
               "id":"Q80$9038fd02-4845-37d5-bd0f-10dfc364ed71",
               "rank":"normal"
@@ -12224,23 +12220,6 @@
                     ]
                  }
               ]
-           }
-        ],
-        "P2037":[
-           {
-              "mainsnak":{
-                 "snaktype":"value",
-                 "property":"P2037",
-                 "hash":"b60607be035c826740792ac5975a45c8772fe00d",
-                 "datavalue":{
-                    "value":"timbl",
-                    "type":"string"
-                 },
-                 "datatype":"external-id"
-              },
-              "type":"statement",
-              "id":"Q80$79e77e2e-4106-d52a-0c94-b7132e7d7a1d",
-              "rank":"normal"
            }
         ],
         "P3630":[

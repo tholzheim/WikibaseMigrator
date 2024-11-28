@@ -1,0 +1,157 @@
+{
+    "pageid": 948505,
+    "ns": 120,
+    "title": "Item:Q959207",
+    "lastrevid": 9215039,
+    "modified": "2024-09-28T17:54:24Z",
+    "type": "item",
+    "id": "Q959207",
+    "labels": {
+        "de": {
+            "language": "de",
+            "value": "48\u00b0 / quadragesimo-octavo"
+        },
+        "en": {
+            "language": "en",
+            "value": "48\u00b0 / quadragesimo-octavo"
+        },
+        "fr": {
+            "language": "fr",
+            "value": "48\u00b0 / quadragesimo-octavo"
+        },
+        "es": {
+            "language": "es",
+            "value": "48\u00b0 / quadragesimo-octavo"
+        }
+    },
+    "descriptions": {
+        "de": {
+            "language": "de",
+            "value": "Buchformat / Papiergr\u00f6\u00dfe"
+        },
+        "en": {
+            "language": "en",
+            "value": "book format / paper size"
+        }
+    },
+    "aliases": {
+        "en": [
+            {
+                "language": "en",
+                "value": "quadragesimo-octavo"
+            },
+            {
+                "language": "en",
+                "value": "48mo"
+            },
+            {
+                "language": "en",
+                "value": "forty-eightmo"
+            },
+            {
+                "language": "en",
+                "value": "48\u00b0"
+            }
+        ]
+    },
+    "claims": {
+        "P2": [
+            {
+                "mainsnak": {
+                    "snaktype": "value",
+                    "property": "P2",
+                    "hash": "58ae1484f2ca6c99058cccd953469d79f6bead08",
+                    "datavalue": {
+                        "value": {
+                            "entity-type": "item",
+                            "numeric-id": 390762,
+                            "id": "Q390762"
+                        },
+                        "type": "wikibase-entityid"
+                    },
+                    "datatype": "wikibase-item"
+                },
+                "type": "statement",
+                "id": "Q959207$9d75d8c1-41b7-e89b-7783-42fb582cbd7f",
+                "rank": "normal"
+            }
+        ],
+        "P499": [
+            {
+                "mainsnak": {
+                    "snaktype": "value",
+                    "property": "P499",
+                    "hash": "072311da0d1848aa5c5bb133d9daa5181587349d",
+                    "datavalue": {
+                        "value": {
+                            "amount": "+48",
+                            "unit": "1"
+                        },
+                        "type": "quantity"
+                    },
+                    "datatype": "quantity"
+                },
+                "type": "statement",
+                "id": "Q959207$3472fe13-4de0-cb44-1630-c2d43c8a2a81",
+                "rank": "normal"
+            }
+        ],
+        "P59": [
+            {
+                "mainsnak": {
+                    "snaktype": "value",
+                    "property": "P59",
+                    "hash": "2f199e4e7b8e8e96489ea6f28449f3f19666c5b8",
+                    "datavalue": {
+                        "value": {
+                            "amount": "+9",
+                            "unit": "https://database.factgrid.de/entity/Q102135"
+                        },
+                        "type": "quantity"
+                    },
+                    "datatype": "quantity"
+                },
+                "type": "statement",
+                "qualifiers": {
+                    "P766": [
+                        {
+                            "snaktype": "value",
+                            "property": "P766",
+                            "hash": "1e3f62373eecf0cd950b06f7e4a3e4e2539e59a7",
+                            "datavalue": {
+                                "value": {
+                                    "amount": "+7.5",
+                                    "unit": "https://database.factgrid.de/entity/Q102135"
+                                },
+                                "type": "quantity"
+                            },
+                            "datatype": "quantity"
+                        }
+                    ],
+                    "P767": [
+                        {
+                            "snaktype": "value",
+                            "property": "P767",
+                            "hash": "4c3dfebe06bd3e8acb22738ce7e3c3aed3ecc468",
+                            "datavalue": {
+                                "value": {
+                                    "amount": "+10",
+                                    "unit": "https://database.factgrid.de/entity/Q102135"
+                                },
+                                "type": "quantity"
+                            },
+                            "datatype": "quantity"
+                        }
+                    ]
+                },
+                "qualifiers-order": [
+                    "P766",
+                    "P767"
+                ],
+                "id": "Q959207$32b1670f-4586-c59e-3064-84e9802cd108",
+                "rank": "normal"
+            }
+        ]
+    },
+    "sitelinks": {}
+}

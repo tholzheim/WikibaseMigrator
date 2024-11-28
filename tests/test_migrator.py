@@ -31,7 +31,19 @@ class TestWikibaseMigrator(unittest.TestCase):
         self.assertGreaterEqual(len(translation_result.missing_items), 2)
         qs_generator = QuickStatementsGenerator()
         qs = qs_generator.generate_item(translation_result.entity)
-        print(qs)
+        self.assertIsInstance(qs, str)
+
+    def test_translation_of_unit_entity_ids(self):
+        """
+        Check if the entity ids of the units of quantity values are correctly translated
+        """
+        expected_maps = {"Q4916": "Q390951"}
+        item = self.get_Q80()
+        translation_result = self.migrator.translate_entity(item)
+        translation_json = translation_result.entity.get_json()
+        for source, target in expected_maps.items():
+            self.assertEqual(self.migrator.mapper.get_mapping_for(source), target)
+            self.assertIn(f'"unit": "{self.config.target.item_prefix}{target}"', json.dumps(translation_json))
 
     def test_get_all_items_ids(self):
         """
@@ -40,6 +52,17 @@ class TestWikibaseMigrator(unittest.TestCase):
         item = self.get_Q80()
         ids = self.migrator.get_all_entity_ids(item)
         self.assertGreaterEqual(len(ids), 390)
+
+    def test_get_all_items_ids_unit_extracted(self):
+        """
+        Test retrieving all ids from an ItemEntity focus is in this test case the extraction of the unit ids
+        """
+        entity_json = json.loads(self.resource_dir.joinpath("unit_ids.json").read_text())
+        item = ItemEntity().from_json(entity_json)
+        ids = self.migrator.get_all_entity_ids(item)
+        self.assertIn("Q102135", ids)
+        self.assertIn("Q102135", ids)
+        self.assertGreaterEqual(len(ids), 8)
 
     def test_migration_of_unknown_values(self):
         """

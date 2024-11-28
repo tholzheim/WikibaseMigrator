@@ -240,6 +240,9 @@ class WikibaseMigrator:
         ids.add(entity.id)
         for claim in entity.claims:
             ids.add(claim.mainsnak.property_number)
+            unit = cls.get_unit_id(claim.mainsnak)
+            if unit is not None:
+                ids.add(unit)
             if cls._is_item_and_known_value(claim.mainsnak):
                 ids.add(claim.mainsnak.datavalue["value"]["id"])
             ids_used_in_qualifiers = cls.get_all_entity_ids_from_qualifiers(claim.qualifiers)
@@ -258,9 +261,27 @@ class WikibaseMigrator:
         ids = set()
         for qualifier in qualifiers:
             ids.add(qualifier.property_number)
+            unit = cls.get_unit_id(qualifier)
+            if unit is not None:
+                ids.add(unit)
             if cls._is_item_and_known_value(qualifier):
                 ids.add(qualifier.datavalue["value"]["id"])
         return list(ids)
+
+    @classmethod
+    def get_unit_id(cls, snak: Snak) -> str | None:
+        """
+        if given snak is of type quantity return the ID of the unit if the unit is defined by an entity
+        :param snak:
+        :return:
+        """
+        if snak.datatype == "quantity":
+            unit = snak.datavalue.get("value", {}).get("unit")
+            if unit is not None and isinstance(unit, str):
+                unit_id = unit.split("/")[-1]
+                if unit_id.startswith(("Q", "P", "L")):
+                    return unit_id
+        return None
 
     @classmethod
     def get_all_entity_ids_from_references(cls, references: References) -> list[str]:
@@ -273,6 +294,9 @@ class WikibaseMigrator:
         for reference_block in references:
             for reference in reference_block.snaks:
                 ids.add(reference.property_number)
+                unit = cls.get_unit_id(reference)
+                if unit is not None:
+                    ids.add(unit)
                 if cls._is_item_and_known_value(reference):
                     ids.add(reference.datavalue["value"]["id"])
         return list(ids)
@@ -619,11 +643,13 @@ class WikibaseMigrator:
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
             case "quantity":
+                unit_id = self.get_unit_id(snak)
+                mapped_unit_id = self.mapper.get_mapping_for(unit_id) if unit_id else None
+                mapped_unit_url = f"{self.profile.target.item_prefix}{mapped_unit_id}"
                 new_snak = datatypes.Quantity(
                     prop_nr=new_property_number,
                     amount=snak.datavalue["value"]["amount"],
-                    # unit=snak.datavalue["value"]["unit"],
-                    # ToDo: Needs to look up unit item mapping but is currently not mapped
+                    unit=mapped_unit_url,
                     upper_bound=snak.datavalue["value"].get("upper_bound", None),
                     lower_bound=snak.datavalue["value"].get("lower_bound", None),
                     snaktype=snak.snaktype,
@@ -645,8 +671,8 @@ class WikibaseMigrator:
                     altitude=snak.datavalue["value"].get("altitude", None),
                     precision=snak.datavalue["value"].get("precision", None),
                     snaktype=snak.snaktype,
-                    # globe=snak.datavalue["value"].get("globe", None),
-                    # ToDo: Needs to look up globe item mapping but is currently not mapped
+                    # globe does not need to be mapped
+                    globe=snak.datavalue["value"].get("globe", None),
                     **kwargs,
                 )
             case "entity-schema":
