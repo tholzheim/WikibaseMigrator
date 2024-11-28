@@ -159,7 +159,7 @@ class WikibaseMigrator:
             login = wbi_login.Login(
                 user=wikibase_config.user,
                 password=wikibase_config.bot_password,
-                mediawiki_api_url=wikibase_config.mediawiki_api_url,
+                mediawiki_api_url=wikibase_config.mediawiki_api_url.unicode_string(),
                 user_agent=get_default_user_agent(),
             )
         elif wikibase_config.consumer_key:
@@ -176,7 +176,7 @@ class WikibaseMigrator:
                 consumer_secret=wikibase_config.consumer_secret,
                 access_token=access_token,
                 access_secret=access_secret,
-                mediawiki_api_url=wikibase_config.mediawiki_api_url,
+                mediawiki_api_url=wikibase_config.mediawiki_api_url.unicode_string(),
                 user_agent=get_default_user_agent(),
             )
         elif wikibase_config.password:
@@ -184,7 +184,7 @@ class WikibaseMigrator:
             login = wbi_login.Clientlogin(
                 user=wikibase_config.user,
                 password=wikibase_config.password,
-                mediawiki_api_url=wikibase_config.mediawiki_api_url,
+                mediawiki_api_url=wikibase_config.mediawiki_api_url.unicode_string(),
                 user_agent=get_default_user_agent(),
             )
         else:

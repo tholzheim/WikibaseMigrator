@@ -38,6 +38,7 @@ class WikibaseConfig(BaseModel):
     bot_password: str | None = None
     consumer_key: str | None = None
     consumer_secret: str | None = None
+    requires_login: bool = True
     user_token: UserToken | None = None
     tag: str | None = None
 
@@ -56,6 +57,12 @@ class WikibaseConfig(BaseModel):
         if self.tag is not None:
             tags.append(self.tag)
         return tags
+
+    def requires_user_login(self):
+        """
+        Returns True if the a user login is required, False otherwise
+        """
+        return
 
 
 class MigrationWikibaseLocation(str, Enum):

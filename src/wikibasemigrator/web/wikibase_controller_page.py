@@ -66,6 +66,8 @@ class WikibaseControllerPage(Webpage):
         """
         Check if user login is required
         """
+        if not self.profile.target.requires_login:
+            return False
         try:
             self.migrator.get_wikibase_login(self.profile.target)
             return False
