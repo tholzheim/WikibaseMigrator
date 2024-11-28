@@ -12,7 +12,7 @@ from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntit
 from wikibaseintegrator.models import Claim, Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator.wbi_enums import WikibaseSnakType
-from wikibaseintegrator.wbi_exceptions import MissingEntityException, NonExistentEntityError
+from wikibaseintegrator.wbi_exceptions import MissingEntityException, MWApiError, NonExistentEntityError
 from wikibaseintegrator.wbi_helpers import mediawiki_api_call_helper
 
 from wikibasemigrator import WbEntity
@@ -768,6 +768,11 @@ class WikibaseMigrator:
                     json.dump(entity_json, f)
             res = entity.entity.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags, login=login)
             entity.created_entity = res
+        except MWApiError as e:
+            logger.info(f"Failed to migrate entity {entity.original_entity.id}")
+            error = f"Error: {str(e)}, details: {e.messages}"
+            entity.errors.append(error)
+            logger.exception(e)
         except Exception as e:
             logger.info(f"Failed to migrate entity {entity.original_entity.id}")
             entity.errors.append(str(e))

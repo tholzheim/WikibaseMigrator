@@ -127,7 +127,12 @@ class MigrationView:
                 {
                     "columnDefs": [
                         {"headerName": "Source", "field": "link"},
-                        {"headerName": "Error Messages", "field": "errors"},
+                        {
+                            "headerName": "Error Messages",
+                            "field": "errors",
+                            "wrapText": True,
+                            "autoHeight": True,
+                        },
                     ],
                     "rowData": rows_errors,
                 },
