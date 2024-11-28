@@ -124,9 +124,10 @@ class EntityMerger:
         """
         source_hash = self._get_datavalue_hash(claim.mainsnak.datavalue)
         for target_claim in claims:
+            source_or_claim_have_no_qualifier = len(target_claim.qualifiers) == 0 or len(claim.qualifiers) == 0
             if (
                 self._get_datavalue_hash(target_claim.mainsnak.datavalue) == source_hash
-                and len(target_claim.qualifiers) == 0
+                and source_or_claim_have_no_qualifier
             ):
                 return target_claim
         return False

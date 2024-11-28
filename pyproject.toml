@@ -10,7 +10,7 @@ authors = [
 maintainers = [
     {name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de"},
 ]
-version = "0.0.2"
+version = "0.0.3"
 readme = "README.md"
 license= "Apache-2.0"
 dependencies = [
@@ -34,6 +34,7 @@ classifiers=[
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Intended Audience :: Developers",
