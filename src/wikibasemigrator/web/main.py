@@ -9,7 +9,10 @@ from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
 # path = Path.home().joinpath(".config/WikibaseMigrator/profiles/FactGridDev.yaml")
 path = Path.home().joinpath(".config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml")
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)-8s %(message)s",
+)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("wikibaseintegrator").setLevel(logging.WARNING)
 logging.getLogger("oauthlib.oauth1.rfc5849").setLevel(logging.WARNING)

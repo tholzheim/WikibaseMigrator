@@ -6,7 +6,10 @@ from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
 
 profile_path = Path("config.yaml")
 
-logging.basicConfig(level=os.environ.get("LOGGING_LEVEL", "INFO"))
+logging.basicConfig(
+    level=os.environ.get("LOGGING_LEVEL", "INFO"),
+    format="%(asctime)s %(levelname)-8s %(message)s",
+)
 webserver = Webserver(profile_path, DEFAULT_ICON_PATH)
 webserver.run(
     host=os.environ.get("WEBSERVER_HOST", "0.0.0.0"),
