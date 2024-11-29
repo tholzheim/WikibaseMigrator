@@ -105,6 +105,12 @@ class WikibaseControllerPage(Webpage):
         self.setup_status_bar()
 
     def setup_status_bar(self) -> None:
+        """
+        Setup status bar showing the availability of the source and target services
+        """
+        if self.status_container is None:
+            logger.error("Abort setup container not yet setup")
+            return
         self.status_container.clear()
         with self.status_container:
             ui.link(self.profile.source.name, target=self.profile.source.website.unicode_string(), new_tab=True)
