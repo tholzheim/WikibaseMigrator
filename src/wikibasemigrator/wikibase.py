@@ -136,6 +136,25 @@ class Query:
         return lod
 
     @classmethod
+    def check_availability_of_sparql_endpoint(cls, endpoint_url: HttpUrl):
+        """
+        Checks if the given endpoint is available.
+        Uses the availability check proposed by Vandenbussche et al. see https://ceur-ws.org/Vol-1035/iswc2013_demo_21.pdf
+        :param endpoint:
+        :return: True if the endpoint is available. Otherwise, False
+        """
+        query = "ASK WHERE{ ?s ?p ?o . }"
+        sparql = SPARQLWrapper(endpoint_url.unicode_string(), agent=get_default_user_agent(), returnFormat=JSON)
+        sparql.setQuery(query)
+        sparql.setMethod(POST)
+        try:
+            resp = sparql.query().convert()
+            return resp.get("boolean", False)
+        except Exception as e:
+            logger.error(e)
+        return False
+
+    @classmethod
     def save_results(cls, name: str, lod: list[dict], path: Path | None = None) -> None:
         """
         store the results as json file
@@ -208,6 +227,21 @@ class MediaWikiEndpoint:
             if code:
                 res[code] = label
         return res
+
+    @classmethod
+    def check_availability(cls, mediawiki_api_url: HttpUrl):
+        """
+        Check if the mediawiki api is available
+        :param mediawiki_api_url:
+        :return: True if the api is available, otherwise False
+        """
+        query = "action=query&titles=Main_Page&prop=revisions&rvprop=content&format=json"
+        try:
+            response = requests.get(f"{mediawiki_api_url.unicode_string()}?{query}")
+            response.raise_for_status()
+        except Exception:
+            return False
+        return True
 
 
 class WikibaseEntityTypes(str, Enum):

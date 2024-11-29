@@ -1,6 +1,8 @@
 import unittest
 
-from wikibasemigrator.wikibase import Query, WikibaseEntityTypes
+from pydantic import HttpUrl
+
+from wikibasemigrator.wikibase import MediaWikiEndpoint, Query, WikibaseEntityTypes
 
 
 class TestWikibaseEntityTypes(unittest.TestCase):
@@ -43,3 +45,23 @@ class TestWikibaseEntityTypes(unittest.TestCase):
         expected = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         for i, chunk in enumerate(Query.chunks([i for i in range(1, 10)], 3)):
             self.assertEqual(chunk, expected[i])
+
+    def test_check_availability_of_sparql_endpoint(self):
+        """
+        Test check_availability_of_sparql_endpoint
+        """
+        url = HttpUrl("https://query.wikidata.org/sparql")
+        self.assertTrue(Query.check_availability_of_sparql_endpoint(url))
+
+
+class TestMediaWikiEndpoint(unittest.TestCase):
+    """
+    Test MediaWikiEndpoint
+    """
+
+    def test_check_availability(self):
+        """
+        Test check_availability
+        """
+        url = HttpUrl("https://database.factgrid.de/w/api.php")
+        self.assertTrue(MediaWikiEndpoint.check_availability(url))
