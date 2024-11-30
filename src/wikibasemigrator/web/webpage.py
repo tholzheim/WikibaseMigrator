@@ -27,7 +27,12 @@ class EndpointsAvailability:
         Returns True if all endpoints are available
         :return:
         """
-        return self.source_sparql_endpoint and self.target_sparql_endpoint and self.target_mediawiki_api
+        return (
+            self.source_sparql_endpoint
+            and self.target_sparql_endpoint
+            and self.target_mediawiki_api
+            and self.source_mediawiki_api
+        )
 
 
 class Webpage:
@@ -46,6 +51,7 @@ class Webpage:
         self.user = user
         self.container: ui.element | None = None
         self.endpoints_availability = EndpointsAvailability()
+        self.status_check: ui.timer | None = None
 
     def setup_ui(self):
         ui.colors(primary="#2c4e80ff")
@@ -66,7 +72,7 @@ class Webpage:
                     ui.label(f"WikibaseMigrator {__version__}")
                 with ui.element("div").classes("flex justify-end ") as right:
                     self.status_container = ui.element("div").classes("flex flex-row")
-                    self.check_service_availabilities()
+                    self.status_check = ui.timer(0.1, self.check_service_availabilities)
 
     def setup_header(self):
         """

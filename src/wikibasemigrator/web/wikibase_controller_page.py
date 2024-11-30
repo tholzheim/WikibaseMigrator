@@ -37,6 +37,7 @@ class WikibaseControllerPage(Webpage):
         self.migration_view = MigrationView(migrator=self.migrator)
         self.view_container: ui.element | None = None
         self.status_container: ui.element | None = None
+        self.view_container_updater: ui.timer | None = None
 
     def setup_ui(self) -> None:
         """
@@ -54,17 +55,24 @@ class WikibaseControllerPage(Webpage):
                 ui.label("→")
                 ui.link(self.profile.target.name, target=self.profile.target.website.unicode_string(), new_tab=True)
             self.view_container = ui.element(tag="div").classes("container h-full")
-            with self.view_container:
-                if not self.endpoints_availability.all_available():
-                    ui.notification(
-                        timeout=None,
-                        type="warning",
-                        message="Some required services are not available. Please try again later.",
-                        position="center",
+            self.view_container_updater = ui.timer(0.1, self.setup_view_container)
+
+    def setup_view_container(self) -> None:
+        self.view_container.clear()
+        self.status_check.interval = 5.0
+        self.view_container_updater.interval = 5.0
+        with self.view_container:
+            if not self.endpoints_availability.all_available():
+                with ui.element("div").classes("flex fle-row"):
+                    ui.label("Some required services are not available. Please try again later.").classes(
+                        "bg-yellow rounded mx-auto p-2 mt-10 px-8"
                     )
-                elif self.requires_login():
+            else:
+                self.status_check.deactivate()
+                self.view_container_updater.deactivate()
+                if self.requires_login():
                     ui.notification(
-                        timeout=None, type="info", message="Please login to migrate entities", position="center"
+                        timeout=0.1, type="info", message="Please login to migrate entities", position="center"
                     )
                 else:
                     self.selection_view.setup_ui()
