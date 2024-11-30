@@ -1,4 +1,3 @@
-import concurrent.futures
 import logging
 from pathlib import Path
 
@@ -13,26 +12,8 @@ from wikibasemigrator.web.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.selection_view import SelectionView
 from wikibasemigrator.web.translation_view import TranslationView
 from wikibasemigrator.web.webpage import Webpage
-from wikibasemigrator.wikibase import MediaWikiEndpoint, Query
 
 logger = logging.getLogger(__name__)
-
-
-class EndpointsAvailability:
-    """
-    Availability status of endpoints
-    """
-
-    source_sparql_endpoint: bool = False
-    target_sparql_endpoint: bool = False
-    target_mediawiki_api: bool = False
-
-    def all_available(self):
-        """
-        Returns True if all endpoints are available
-        :return:
-        """
-        return self.source_sparql_endpoint and self.target_sparql_endpoint and self.target_mediawiki_api
 
 
 class WikibaseControllerPage(Webpage):
@@ -56,7 +37,6 @@ class WikibaseControllerPage(Webpage):
         self.migration_view = MigrationView(migrator=self.migrator)
         self.view_container: ui.element | None = None
         self.status_container: ui.element | None = None
-        self.endpoints_availability = EndpointsAvailability()
 
     def setup_ui(self) -> None:
         """
@@ -69,9 +49,10 @@ class WikibaseControllerPage(Webpage):
             return
         with self.container:
             ui.label(self.profile.name).classes("text-4xl font-bold text-center p-2")
-            self.status_container = ui.element("div").classes("flex flex-row mx-auto text-xl")
-            self.setup_status_bar()
-            self.check_service_availabilities()
+            with ui.element("div").classes("flex flex-row mx-auto text-xl"):
+                ui.link(self.profile.source.name, target=self.profile.source.website.unicode_string(), new_tab=True)
+                ui.label("→")
+                ui.link(self.profile.target.name, target=self.profile.target.website.unicode_string(), new_tab=True)
             self.view_container = ui.element(tag="div").classes("container h-full")
             with self.view_container:
                 if not self.endpoints_availability.all_available():
@@ -87,51 +68,6 @@ class WikibaseControllerPage(Webpage):
                     )
                 else:
                     self.selection_view.setup_ui()
-
-    def check_service_availabilities(self):
-        """
-        Check the availability of the used services
-        """
-        logger.info("Checking availability of used Services")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            future1 = executor.submit(Query.check_availability_of_sparql_endpoint, self.profile.source.sparql_url)
-            future2 = executor.submit(Query.check_availability_of_sparql_endpoint, self.profile.target.sparql_url)
-            future3 = executor.submit(MediaWikiEndpoint.check_availability, self.profile.target.mediawiki_api_url)
-
-            self.endpoints_availability.source_sparql_endpoint = future1.result()
-            self.endpoints_availability.target_sparql_endpoint = future2.result()
-            self.endpoints_availability.target_mediawiki_api = future3.result()
-
-        self.setup_status_bar()
-
-    def setup_status_bar(self) -> None:
-        """
-        Setup status bar showing the availability of the source and target services
-        """
-        if self.status_container is None:
-            logger.error("Abort setup container not yet setup")
-            return
-        self.status_container.clear()
-        with self.status_container:
-            ui.link(self.profile.source.name, target=self.profile.source.website.unicode_string(), new_tab=True)
-            ui.icon(
-                "wifi" if self.endpoints_availability.source_sparql_endpoint else "wifi_off",
-                color="green" if self.endpoints_availability.source_sparql_endpoint else "red",
-            ).tooltip(f"{self.profile.source.name} SPARQL Endpoint availability")
-            ui.label("→")
-            ui.link(self.profile.target.name, target=self.profile.target.website.unicode_string(), new_tab=True)
-            ui.icon(
-                "wifi" if self.endpoints_availability.target_sparql_endpoint else "wifi_off",
-                color="green" if self.endpoints_availability.target_sparql_endpoint else "red",
-            ).tooltip(f"{self.profile.target.name} SPARQL Endpoint availability")
-            ui.icon(
-                "wifi" if self.endpoints_availability.target_mediawiki_api else "wifi_off",
-                color="green" if self.endpoints_availability.target_mediawiki_api else "red",
-            ).bind_name_from(
-                self.endpoints_availability,
-                "target_mediawiki_api",
-                backward=lambda is_available: "wifi" if is_available else "wifi_off",
-            ).tooltip(f"{self.profile.target.name} Mediawiki API availability")
 
     def requires_login(self) -> bool:
         """

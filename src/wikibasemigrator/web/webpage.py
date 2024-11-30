@@ -1,3 +1,5 @@
+import concurrent.futures
+import logging
 from pathlib import Path
 
 from nicegui import app, ui
@@ -5,6 +7,27 @@ from nicegui import app, ui
 from wikibasemigrator import __version__
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.web.oauth import MediaWikiUserIdentity
+from wikibasemigrator.wikibase import MediaWikiEndpoint, Query
+
+logger = logging.getLogger(__name__)
+
+
+class EndpointsAvailability:
+    """
+    Availability status of endpoints
+    """
+
+    source_sparql_endpoint: bool = False
+    source_mediawiki_api: bool = False
+    target_sparql_endpoint: bool = False
+    target_mediawiki_api: bool = False
+
+    def all_available(self):
+        """
+        Returns True if all endpoints are available
+        :return:
+        """
+        return self.source_sparql_endpoint and self.target_sparql_endpoint and self.target_mediawiki_api
 
 
 class Webpage:
@@ -22,6 +45,7 @@ class Webpage:
         self.icon_path = icon_path
         self.user = user
         self.container: ui.element | None = None
+        self.endpoints_availability = EndpointsAvailability()
 
     def setup_ui(self):
         ui.colors(primary="#2c4e80ff")
@@ -35,8 +59,14 @@ class Webpage:
         :return:
         """
         with ui.footer():
-            with ui.element("div").classes("mx-auto"):
-                ui.label(f"WikibaseMigrator {__version__}")
+            with ui.element("div").classes("flex justify-between w-full"):
+                with ui.element("div").classes("flex justify-start") as left:
+                    pass
+                with ui.element("div").classes("flex justify-center") as middle:
+                    ui.label(f"WikibaseMigrator {__version__}")
+                with ui.element("div").classes("flex justify-end ") as right:
+                    self.status_container = ui.element("div").classes("flex flex-row")
+                    self.check_service_availabilities()
 
     def setup_header(self):
         """
@@ -84,3 +114,65 @@ class Webpage:
         app.storage.user["token"] = None
         app.storage.user["user"] = None
         ui.navigate.to("/", new_tab=False)
+
+    def check_service_availabilities(self):
+        """
+        Check the availability of the used services
+        """
+        logger.info("Checking availability of used Services")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            future1 = executor.submit(Query.check_availability_of_sparql_endpoint, self.profile.source.sparql_url)
+            future4 = executor.submit(MediaWikiEndpoint.check_availability, self.profile.source.mediawiki_api_url)
+            future2 = executor.submit(Query.check_availability_of_sparql_endpoint, self.profile.target.sparql_url)
+            future3 = executor.submit(MediaWikiEndpoint.check_availability, self.profile.target.mediawiki_api_url)
+
+            self.endpoints_availability.source_sparql_endpoint = future1.result()
+            self.endpoints_availability.target_sparql_endpoint = future2.result()
+            self.endpoints_availability.target_mediawiki_api = future3.result()
+            self.endpoints_availability.source_mediawiki_api = future4.result()
+
+        self.setup_status_bar()
+
+    def setup_status_bar(self) -> None:
+        """
+        Setup status bar showing the availability of the source and target services
+        """
+        icon_available = "wifi"
+        icon_unavailable = "wifi_off"
+
+        def show_endpoint_status(name: str, status: bool) -> None:
+            with ui.element("div").classes("flex flex-row w-full"):
+                ui.label(f"{name}:").classes("grow")
+                ui.icon(icon_available if status else icon_unavailable, color="green" if status else "red").classes(
+                    "justify-self-end"
+                )
+
+        if self.status_container is None:
+            logger.error("Abort setup container not yet setup")
+            return
+        self.status_container.clear()
+
+        with self.status_container:
+            icon = icon_available if self.endpoints_availability.all_available() else icon_unavailable
+            with ui.dialog() as dialog, ui.card().classes("flex flex-col"):
+                ui.label("Endpoint availabilities").classes("text-xl")
+                show_endpoint_status(
+                    f"{self.profile.source.name} SPARQL Endpoint availability",
+                    self.endpoints_availability.source_sparql_endpoint,
+                )
+                show_endpoint_status(
+                    f"{self.profile.source.name} Mediawiki API availability",
+                    self.endpoints_availability.source_mediawiki_api,
+                )
+                show_endpoint_status(
+                    f"{self.profile.target.name} SPARQL Endpoint availability",
+                    self.endpoints_availability.target_sparql_endpoint,
+                )
+                show_endpoint_status(
+                    f"{self.profile.target.name} Mediawiki API availability",
+                    self.endpoints_availability.target_mediawiki_api,
+                )
+                ui.button("Close", on_click=dialog.close)
+            ui.icon(icon, color="green" if self.endpoints_availability.all_available() else "red").classes(
+                "hover:cursor-pointer"
+            ).on("click", dialog.open)
