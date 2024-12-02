@@ -645,7 +645,7 @@ class WikibaseMigrator:
             case "quantity":
                 unit_id = self.get_unit_id(snak)
                 mapped_unit_id = self.mapper.get_mapping_for(unit_id) if unit_id else None
-                mapped_unit_url = f"{self.profile.target.item_prefix}{mapped_unit_id}"
+                mapped_unit_url = f"{self.profile.target.item_prefix}{mapped_unit_id}" if mapped_unit_id else None
                 new_snak = datatypes.Quantity(
                     prop_nr=new_property_number,
                     amount=snak.datavalue["value"]["amount"],
