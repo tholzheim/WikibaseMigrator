@@ -5,6 +5,7 @@ from string import Template
 
 from wikibasemigrator import config, wikibase
 from wikibasemigrator.model.profile import WikibaseConfig, WikibaseMigrationProfile
+from wikibasemigrator.wikibase import WbiDataTypes
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +17,10 @@ class WikibaseItemMapper:
 
     def __init__(self, profile: WikibaseMigrationProfile):
         self.migration_profile = profile
-        self._raw_mappings: set(tuple[str, str]) = set()
+        self._raw_mappings: set[tuple[str, str]] = set()
         self.mappings: dict[str, str | None] = dict()
-        self.source_property_types = dict()
-        self.target_property_types = dict()
+        self.source_property_types: dict[str, WbiDataTypes] = dict()
+        self.target_property_types: dict[str, WbiDataTypes] = dict()
 
     @property
     def wikibase_config(self) -> WikibaseConfig:

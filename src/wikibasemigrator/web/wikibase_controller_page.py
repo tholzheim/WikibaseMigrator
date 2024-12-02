@@ -58,9 +58,14 @@ class WikibaseControllerPage(Webpage):
             self.view_container_updater = ui.timer(0.1, self.setup_view_container)
 
     def setup_view_container(self) -> None:
+        if self.view_container is None:
+            logger.error("Abort setup container not yet setup")
+            return
         self.view_container.clear()
-        self.status_check.interval = 5.0
-        self.view_container_updater.interval = 5.0
+        if self.status_check:
+            self.status_check.interval = 5.0
+        if self.view_container_updater:
+            self.view_container_updater.interval = 5.0
         with self.view_container:
             if not self.endpoints_availability.all_available():
                 with ui.element("div").classes("flex fle-row"):
@@ -68,8 +73,10 @@ class WikibaseControllerPage(Webpage):
                         "bg-yellow rounded mx-auto p-2 mt-10 px-8"
                     )
             else:
-                self.status_check.deactivate()
-                self.view_container_updater.deactivate()
+                if self.status_check:
+                    self.status_check.deactivate()
+                if self.view_container_updater:
+                    self.view_container_updater.deactivate()
                 if self.requires_login():
                     ui.notification(
                         timeout=None, type="info", message="Please login to migrate entities", position="center"

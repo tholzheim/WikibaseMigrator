@@ -130,7 +130,7 @@ class Query:
     @classmethod
     def get_property_datatype(
         cls, endpoint_url: HttpUrl, property_ids: list[str], item_prefix: HttpUrl
-    ) -> dict[str, WikidataDataTypes | None]:
+    ) -> dict[str, WikidataDataTypes]:
         """
         Get the datatype for the given list of property ids
         :param endpoint_url: endpoint to query

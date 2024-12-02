@@ -839,11 +839,14 @@ class WikibaseMigrator:
         :param kwargs:
         :return:
         """
+        new_snak = None
         source_pid = snak.property_number
         target_pid = self.mapper.get_mapping_for(source_pid)
+        if target_pid is None:
+            logger.error(f"Mapping for {source_pid} is unknown")
+            return new_snak
         source_type = self.mapper.source_property_types.get(source_pid)
         target_type = self.mapper.target_property_types.get(target_pid)
-        new_snak = None
         error_msg = None
         match (source_type, target_type):
             case (WbiDataTypes.STRING, WbiDataTypes.QUANTITY):
