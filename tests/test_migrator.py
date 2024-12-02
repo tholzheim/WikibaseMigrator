@@ -41,8 +41,9 @@ class TestWikibaseMigrator(unittest.TestCase):
         """
         Check if the entity ids of the units of quantity values are correctly translated
         """
-        expected_maps = {"Q4916": "Q390951"}
-        item = self.get_Q80()
+        expected_maps = {"Q11573": "Q102132"}
+        entity_json = json.loads(self.resource_dir.joinpath("unit_ids.json").read_text())
+        item = ItemEntity().from_json(entity_json)
         translation_result = self.migrator.translate_entity(item)
         translation_json = translation_result.entity.get_json()
         for source, target in expected_maps.items():
@@ -64,8 +65,8 @@ class TestWikibaseMigrator(unittest.TestCase):
         entity_json = json.loads(self.resource_dir.joinpath("unit_ids.json").read_text())
         item = ItemEntity().from_json(entity_json)
         ids = self.migrator.get_all_entity_ids(item)
-        self.assertIn("Q102135", ids)
-        self.assertIn("Q102135", ids)
+        self.assertIn("Q11573", ids)
+        self.assertIn("Q174789", ids)
         self.assertGreaterEqual(len(ids), 8)
 
     def test_migration_of_unknown_values(self):
@@ -94,7 +95,6 @@ class TestWikibaseMigrator(unittest.TestCase):
         tests the translation for the case string to quantity
         """
         source_series_ordinal = "P1545"
-        target_series_ordinal = "P499"
         self.migrator.prepare_mapper_cache_by_ids([source_series_ordinal])
         string = String(value="1", prop_nr=source_series_ordinal)
         translation_result = EntityTranslationResult(

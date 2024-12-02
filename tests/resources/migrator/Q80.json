@@ -9547,26 +9547,11 @@
                        },
                        "datatype":"string"
                     }
-                 ],
-                 "P1545":[
-                    {
-                       "snaktype":"value",
-                       "property":"P1545",
-                       "datavalue":{
-                          "value":{
-                             "amount":"+44",
-                             "unit":"http://www.wikidata.org/entity/Q4916"
-                          },
-                          "type":"quantity"
-                       },
-                       "datatype":"quantity"
-                    }
                  ]
               },
               "qualifiers-order":[
                  "P585",
-                 "P1810",
-                 "P1545"
+                 "P1810"
               ],
               "id":"Q80$9038fd02-4845-37d5-bd0f-10dfc364ed71",
               "rank":"normal"
