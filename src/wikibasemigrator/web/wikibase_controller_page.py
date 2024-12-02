@@ -72,7 +72,7 @@ class WikibaseControllerPage(Webpage):
                 self.view_container_updater.deactivate()
                 if self.requires_login():
                     ui.notification(
-                        timeout=0.1, type="info", message="Please login to migrate entities", position="center"
+                        timeout=None, type="info", message="Please login to migrate entities", position="center"
                     )
                 else:
                     self.selection_view.setup_ui()
