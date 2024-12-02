@@ -5,6 +5,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from enum import Enum
+from functools import partial
 from pathlib import Path
 from string import Template
 
@@ -16,11 +17,70 @@ from wikibaseintegrator import __version__
 logger = logging.getLogger(__name__)
 
 
+WIKIBASE_PREFIX = "http://wikiba.se/ontology#"
+
+
 def get_default_user_agent() -> str:
     """
     Get default user agent
     """
     return f"WikibaseMigrator/{__version__}"
+
+
+class WbiDataTypes(str, Enum):
+    """
+    WikibaseIntegrator data types
+    """
+
+    STRING = "string"
+    EXTERNAL_ID = "external-id"
+    WIKIBASE_ITEM = "wikibase-item"
+    TIME = "time"
+    COMMONS_MEDIA = "commonsMedia"
+    QUANTITY = "quantity"
+    MONOLINGUALTEXT = "monolingualtext"
+    GLOBE_COORDINATE = "globecoordinate"
+    ENTITY_SCHEMA = "entity-schema"
+    URL = "url"
+    PROPERTY = "property"
+    GEO_SHAPE = "geo-shape"
+    TABUlAR_DATA = "tabulated-data"
+    MATH = "math"
+    SENSE = "wikibase-sense"
+    MUSICAL_NOTATION = "musical-notation"
+    LEXEME = "wikibase-lexeme"
+    FORM = "wikibase-form"
+    BASE_DATATYPE = "base-data-type"
+    LOCAL_MEDIA = "localMedia"
+    EDTF = "edtf"
+
+
+class WikidataDataTypes(str, Enum):
+    """
+    wikidata data types
+    """
+
+    STRING = "String"
+    EXTERNAL_ID = "ExternalId"
+    WIKIBASE_ITEM = "WikibaseItem"
+    TIME = "Time"
+    COMMONS_MEDIA = "CommonsMedia"
+    QUANTITY = "Quantity"
+    MONOLINGUALTEXT = "Monolingualtext"
+    GLOBE_COORDINATE = "GlobeCoordinate"
+    ENTITY_SCHEMA = "EntitySchema"
+    URL = "Url"
+    PROPERTY = "WikibaseProperty"
+    GEO_SHAPE = "GeoShape"
+    TABUlAR_DATA = "TabularData"
+    MATH = "Math"
+    SENSE = "WikibaseSense"
+    MUSICAL_NOTATION = "MusicalNotation"
+    LEXEME = "WikibaseLexeme"
+    FORM = "WikibaseForm"
+
+    def get_wbi_type(self) -> WbiDataTypes:
+        return WbiDataTypes[self.name]
 
 
 class Query:
@@ -68,6 +128,45 @@ class Query:
         return lod
 
     @classmethod
+    def get_property_datatype(
+        cls, endpoint_url: HttpUrl, property_ids: list[str], item_prefix: HttpUrl
+    ) -> dict[str, WikidataDataTypes | None]:
+        """
+        Get the datatype for the given list of property ids
+        :param endpoint_url: endpoint to query
+        :param property_ids: property ids for which the datatype should be returned
+        :param item_prefix: namespace of the wikibase entities
+        :return: mapping from the property ids to the datatype
+        """
+        query = """
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX wikibase: <http://wikiba.se/ontology#>
+        SELECT * WHERE {
+          VALUES ?p {
+            $property_ids
+          }
+          ?p rdf:type wikibase:Property;
+            wikibase:propertyType ?type.
+        }
+        """
+        if not property_ids:
+            return {}
+        property_uris = map(partial(cls.add_namespace, namespace=item_prefix.unicode_string()), property_ids)
+        values = list(map(cls.get_sparql_uri, property_uris))
+        lod = cls.execute_values_query_in_chunks(
+            query_template=Template(query),
+            param_name="property_ids",
+            values=values,
+            endpoint_url=endpoint_url,
+        )
+        prop_type_map = dict()
+        for d in lod:
+            pid = cls.remove_namespace(d.get("p"), item_prefix.unicode_string())
+            datatype = cls.remove_namespace(d.get("type"), WIKIBASE_PREFIX)
+            prop_type_map[pid] = WikidataDataTypes(datatype)
+        return prop_type_map
+
+    @classmethod
     def chunks(cls, lst, n):
         """Yield successive n-sized chunks from lst."""
         for i in range(0, len(lst), n):
@@ -75,7 +174,7 @@ class Query:
 
     @classmethod
     def execute_values_query_in_chunks(
-        cls, query_template: Template, param_name: str, values: list[str], endpoint_url=HttpUrl, chunk_size: int = 1000
+        cls, query_template: Template, param_name: str, values: list[str], endpoint_url: HttpUrl, chunk_size: int = 1000
     ):
         """
         Execute given query in chunks to speedup execution
@@ -193,6 +292,30 @@ class Query:
         path = Path(d).joinpath("WikibaseMigrator")
         path.mkdir(parents=True, exist_ok=True)
         return path
+
+    @classmethod
+    def add_namespace(cls, value: str, namespace: str) -> str:
+        """
+        Adds the namespace prefix to each value if needed
+        :param value: value to which the prefix is added
+        :param namespace: namespace to add
+        :return: list of URLs
+        """
+        return value if value.startswith(namespace) else namespace + value
+
+    @classmethod
+    def remove_namespace(cls, value: str, namespace: str) -> str:
+        """
+        Removes the namespace prefix from the value if needed
+        :param value:
+        :param namespace:
+        :return:
+        """
+        return value.removeprefix(namespace)
+
+    @classmethod
+    def get_sparql_uri(cls, value: str) -> str:
+        return f"<{value}>"
 
 
 class MediaWikiEndpoint:
