@@ -66,11 +66,14 @@ class Webpage:
         """
         with ui.footer():
             with ui.element("div").classes("flex justify-between w-full"):
-                with ui.element("div").classes("flex justify-start") as left:
+                with ui.element("div") as left:
+                    left.classes("flex justify-start")
                     pass
-                with ui.element("div").classes("flex justify-center") as middle:
+                with ui.element("div") as middle:
+                    middle.classes("flex justify-center")
                     ui.label(f"WikibaseMigrator {__version__}")
-                with ui.element("div").classes("flex justify-end ") as right:
+                with ui.element("div") as right:
+                    right.classes("flex justify-end ")
                     self.status_container = ui.element("div").classes("flex flex-row")
                     self.status_check = ui.timer(0.1, self.check_service_availabilities)
 

@@ -858,7 +858,7 @@ class WikibaseMigrator:
                         **kwargs,
                     )
                 except ValueError:
-                    error_msg = f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')} to type Quantity"
+                    error_msg = f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')} to type Quantity"  # noqa: E501
             case (WbiDataTypes.STRING, WbiDataTypes.WIKIBASE_ITEM):
                 error_msg = f"Unsolvable type mismatch {source_type}→{target_type}. Excluding this snak"
             case (WbiDataTypes.STRING, WbiDataTypes.MONOLINGUALTEXT):
@@ -870,7 +870,7 @@ class WikibaseMigrator:
                     snaktype=snak.snaktype,
                     **kwargs,
                 )
-                error_msg = f"Resolved type mismatch by casting '{value}' to '{value}'@{self.profile.type_casts.fallback_language}"
+                error_msg = f"Resolved type mismatch by casting '{value}' to '{value}'@{self.profile.type_casts.fallback_language}"  # noqa: E501
             case (WbiDataTypes.STRING, WbiDataTypes.EXTERNAL_ID):
                 new_snak = datatypes.ExternalID(
                     prop_nr=target_pid, value=snak.datavalue.get("value"), snaktype=snak.snaktype, **kwargs

@@ -89,7 +89,6 @@ class TypeCastConfig(BaseModel):
     ] = "mul"
 
 
-
 class EntityMappingConfig(BaseModel):
     """
     configuration for extracting the item mapping between source and target
