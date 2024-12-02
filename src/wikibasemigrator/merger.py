@@ -79,6 +79,8 @@ class EntityMerger:
         :param target:
         :return:
         """
+        if not isinstance(source, ItemEntity):
+            return
         for sitelink in source.sitelinks.sitelinks.values():
             if self.action_if_exists is ActionIfExists.REPLACE_ALL or sitelink.site not in target.sitelinks.sitelinks:
                 target.sitelinks.set(site=sitelink.site, title=sitelink.title, badges=sitelink.badges)
