@@ -282,7 +282,7 @@ class EntityLine(BaseLine):
     """A line whose target is a string literal."""
 
     type: Literal["Entity"] = "Entity"
-    target: str = _safe_field(regex=r"^Q\d+$")
+    target: str = _safe_field(regex=r"^[PQ]\d+$")
 
 
 class TextLine(BaseLine):
