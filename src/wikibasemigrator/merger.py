@@ -5,6 +5,7 @@ Module to merge wikibase entities
 import json
 import logging
 
+from wikibaseintegrator.entities import ItemEntity
 from wikibaseintegrator.models import Claim, Claims, Reference, Snak
 from wikibaseintegrator.wbi_enums import ActionIfExists
 

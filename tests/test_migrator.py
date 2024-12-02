@@ -3,11 +3,15 @@ import unittest
 from pathlib import Path
 
 from wikibaseintegrator import WikibaseIntegrator
+from wikibaseintegrator.datatypes import String
 from wikibaseintegrator.entities import ItemEntity
+from wikibaseintegrator.models import Snak
 
 from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.profile import load_profile
+from wikibasemigrator.model.translations import EntityTranslationResult
 from wikibasemigrator.qsgenerator import QuickStatementsGenerator
+from wikibasemigrator.wikibase import WbiDataTypes
 
 
 class TestWikibaseMigrator(unittest.TestCase):
@@ -81,6 +85,26 @@ class TestWikibaseMigrator(unittest.TestCase):
         wbi = WikibaseIntegrator()
         p = wbi.property.get("P31", mediawiki_api_url="https://www.wikidata.org/w/api.php")
         print(p)
+
+    def get_blank_item(self) -> ItemEntity:
+        return ItemEntity()
+
+    def test_mismatch_translation_string_to_quantity(self):
+        """
+        tests the translation for the case string to quantity
+        """
+        source_series_ordinal = "P1545"
+        target_series_ordinal = "P499"
+        self.migrator.prepare_mapper_cache_by_ids([source_series_ordinal])
+        string = String(value="1", prop_nr=source_series_ordinal)
+        translation_result = EntityTranslationResult(
+            entity=self.get_blank_item(),
+            original_entity=self.get_blank_item(),
+        )
+        string_snak = Snak().from_json(string.mainsnak.get_json())
+        new_snak = self.migrator._translate_snak_with_type_mismatch(string_snak, translation_result)
+        self.assertEqual(new_snak.mainsnak.datatype, WbiDataTypes.QUANTITY.value)
+        self.assertEqual(new_snak.mainsnak.datavalue.get("value").get("amount"), "+1")
 
 
 if __name__ == "__main__":

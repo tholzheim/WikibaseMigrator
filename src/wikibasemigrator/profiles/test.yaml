@@ -53,3 +53,6 @@ back_reference:
   property:
     type: Property
     id: P2
+type_casts:
+  enabled: True
+  fallback_language: "en"

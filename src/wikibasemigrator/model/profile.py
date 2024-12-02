@@ -1,6 +1,7 @@
 import logging
 from enum import Enum
 from pathlib import Path
+from typing import Annotated
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
@@ -74,6 +75,21 @@ class MigrationWikibaseLocation(str, Enum):
     TARGET = "target"
 
 
+class TypeCastConfig(BaseModel):
+    """
+    configuration for a type cast in case of a property type mismatch
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(description="If True property type casting is applied if there is a mismatch between source and target"),
+    ] = True
+    fallback_language: Annotated[
+        str, Field(description="Language to use when casting from a value without to a value with langauge")
+    ] = "mul"
+
+
+
 class EntityMappingConfig(BaseModel):
     """
     configuration for extracting the item mapping between source and target
@@ -122,6 +138,7 @@ class WikibaseMigrationProfile(BaseModel):
     target: WikibaseConfig
     mapping: EntityMappingConfig
     back_reference: BackReference | None = None
+    type_casts: TypeCastConfig = TypeCastConfig()
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:
         """

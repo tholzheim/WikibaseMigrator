@@ -11,7 +11,7 @@ from wikibaseintegrator.datatypes import BaseDataType
 from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntity, PropertyEntity
 from wikibaseintegrator.models import Claim, Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
-from wikibaseintegrator.wbi_enums import WikibaseSnakType
+from wikibaseintegrator.wbi_enums import ActionIfExists, WikibaseSnakType
 from wikibaseintegrator.wbi_exceptions import MissingEntityException, MWApiError, NonExistentEntityError
 from wikibaseintegrator.wbi_helpers import mediawiki_api_call_helper
 
@@ -21,7 +21,7 @@ from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.merger import EntityMerger
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
-from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
+from wikibasemigrator.wikibase import Query, WbiDataTypes, WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -558,6 +558,7 @@ class WikibaseMigrator:
         for qualifier in claim.qualifiers:
             new_qualifier = self._translate_snak(qualifier, translation_result=result)
             if new_qualifier is not None:
+                # ToDo: Add action_if_exists once implemented
                 new_qualifiers.add(new_qualifier)
             else:
                 # ToDo: Handle missing property in target
@@ -577,11 +578,13 @@ class WikibaseMigrator:
             for snak in reference.snaks:
                 new_snak = self._translate_snak(snak, translation_result=result)
                 if new_snak is not None:
+                    # ToDo: Add action_if_exists once implemented
                     new_reference.add(new_snak)
                 else:
                     # ToDo: Handle missing property in target
                     pass
             if len(new_reference.snaks) > 0:
+                # ToDo: Add action_if_exists once implemented
                 new_references.add(new_reference)
         return new_references
 
@@ -606,16 +609,28 @@ class WikibaseMigrator:
         new_snak = None
         if snak.snaktype is not WikibaseSnakType.KNOWN_VALUE:
             return BaseDataType(prop_nr=new_property_number, snaktype=snak.snaktype, **kwargs)
+        if self.has_type_mismatch(snak.property_number, new_property_number):
+            logger.debug(
+                f"Property {snak.property_number} and target property {new_property_number} have a type mismatched"
+            )
+            if not self.profile.type_casts.enabled:
+                logger.debug("Ignoring type mismatch as type casting is disabled in migration profile")
+                translation_result.errors.append(
+                    f"Ignoring Property {snak.property_number} due to type mismatch and disabled auto type casting"
+                )
+                return new_snak
+            new_snak = self._translate_snak_with_type_mismatch(snak, translation_result=translation_result, **kwargs)
+            return new_snak
         match snak.datatype:
-            case "string":
+            case WbiDataTypes.STRING:
                 new_snak = datatypes.String(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "external-id":
+            case WbiDataTypes.EXTERNAL_ID:
                 new_snak = datatypes.ExternalID(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "wikibase-item":
+            case WbiDataTypes.WIKIBASE_ITEM:
                 source_id = snak.datavalue.get("value", {}).get("id", None)
                 mapped_id = self.mapper.get_mapping_for(source_id) if source_id else None
                 if mapped_id:
@@ -625,7 +640,7 @@ class WikibaseMigrator:
                 else:
                     translation_result.add_missing_item(snak.datavalue["value"]["id"])
                     new_snak = None
-            case "time":
+            case WbiDataTypes.TIME:
                 new_snak = datatypes.Time(
                     prop_nr=new_property_number,
                     time=snak.datavalue["value"]["time"],
@@ -638,11 +653,11 @@ class WikibaseMigrator:
                     snaktype=snak.snaktype,
                     **kwargs,
                 )
-            case "commonsMedia":
+            case WbiDataTypes.COMMONS_MEDIA:
                 new_snak = datatypes.CommonsMedia(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "quantity":
+            case WbiDataTypes.QUANTITY:
                 unit_id = self.get_unit_id(snak)
                 mapped_unit_id = self.mapper.get_mapping_for(unit_id) if unit_id else None
                 mapped_unit_url = f"{self.profile.target.item_prefix}{mapped_unit_id}" if mapped_unit_id else None
@@ -655,7 +670,7 @@ class WikibaseMigrator:
                     snaktype=snak.snaktype,
                     **kwargs,
                 )
-            case "monolingualtext":
+            case WbiDataTypes.MONOLINGUALTEXT:
                 new_snak = datatypes.MonolingualText(
                     prop_nr=new_property_number,
                     text=snak.datavalue["value"].get("text", None),
@@ -663,7 +678,7 @@ class WikibaseMigrator:
                     snaktype=snak.snaktype,
                     **kwargs,
                 )
-            case "globecoordinate":
+            case WbiDataTypes.GLOBE_COORDINATE:
                 new_snak = datatypes.GlobeCoordinate(
                     prop_nr=new_property_number,
                     latitude=snak.datavalue["value"].get("latitude", None),
@@ -675,24 +690,24 @@ class WikibaseMigrator:
                     globe=snak.datavalue["value"].get("globe", None),
                     **kwargs,
                 )
-            case "entity-schema":
+            case WbiDataTypes.ENTITY_SCHEMA:
                 new_snak = datatypes.EntitySchema(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "url":
+            case WbiDataTypes.URL:
                 new_snak = datatypes.URL(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "property":
+            case WbiDataTypes.PROPERTY:
                 new_snak = datatypes.Property(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "geo-shape":
+            case WbiDataTypes.GEO_SHAPE:
                 # ToDo: links to a file in mediawiki commons → how to translate map to same file or also copy file
                 new_snak = datatypes.GeoShape(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
                 )
-            case "tabular-data":
+            case WbiDataTypes.TABUlAR_DATA:
                 # ToDo: links to a file in mediawiki commons → how to translate map to same file or also copy file
                 new_snak = datatypes.TabularData(
                     prop_nr=new_property_number, value=snak.datavalue["value"], snaktype=snak.snaktype, **kwargs
@@ -804,3 +819,78 @@ class WikibaseMigrator:
             entity.errors.append(str(e))
             logger.exception(e)
         return entity
+
+    def has_type_mismatch(self, source_pid, target_pid) -> bool:
+        """
+        Checks if source and target property have a type mismatch
+        :param source_pid: pid of the source proeprty
+        :param target_pid: pid of the target property
+        :return: True if source and target property have a type mismatch. False otherwise
+        """
+        source_type = self.mapper.source_property_types.get(source_pid)
+        target_type = self.mapper.target_property_types.get(target_pid)
+        return source_type != target_type
+
+    def _translate_snak_with_type_mismatch(self, snak: Snak, translation_result: EntityTranslationResult, **kwargs):
+        """
+        translate given snak if possible by casting the datatype pf the property
+        :param snak:
+        :param translation_result:
+        :param kwargs:
+        :return:
+        """
+        source_pid = snak.property_number
+        target_pid = self.mapper.get_mapping_for(source_pid)
+        source_type = self.mapper.source_property_types.get(source_pid)
+        target_type = self.mapper.target_property_types.get(target_pid)
+        new_snak = None
+        error_msg = None
+        match (source_type, target_type):
+            case (WbiDataTypes.STRING, WbiDataTypes.QUANTITY):
+                try:
+                    value = snak.datavalue.get("value")
+                    amount = int(value)
+                    error_msg = f"Resolved type missmatch by casting '{value}' to {amount}"
+                    new_snak = datatypes.Quantity(
+                        prop_nr=target_pid,
+                        amount=amount,
+                        snaktype=snak.snaktype,
+                        **kwargs,
+                    )
+                except ValueError:
+                    error_msg = f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')} to type Quantity"
+            case (WbiDataTypes.STRING, WbiDataTypes.WIKIBASE_ITEM):
+                error_msg = f"Unsolvable type mismatch {source_type}→{target_type}. Excluding this snak"
+            case (WbiDataTypes.STRING, WbiDataTypes.MONOLINGUALTEXT):
+                value = snak.datavalue.get("value")
+                new_snak = datatypes.MonolingualText(
+                    prop_nr=target_pid,
+                    text=value,
+                    language=self.profile.type_casts.fallback_language,
+                    snaktype=snak.snaktype,
+                    **kwargs,
+                )
+                error_msg = f"Resolved type mismatch by casting '{value}' to '{value}'@{self.profile.type_casts.fallback_language}"
+            case (WbiDataTypes.STRING, WbiDataTypes.EXTERNAL_ID):
+                new_snak = datatypes.ExternalID(
+                    prop_nr=target_pid, value=snak.datavalue.get("value"), snaktype=snak.snaktype, **kwargs
+                )
+            case (WbiDataTypes.MONOLINGUALTEXT, WbiDataTypes.STRING):
+                value = snak.datavalue["value"].get("text", None)
+                language = snak.datavalue["value"].get("language", None)
+                new_snak = datatypes.String(prop_nr=target_pid, value=value, snaktype=snak.snaktype, **kwargs)
+                error_msg = f"Resolved type mismatch by casting '{value}'@{language} to '{value}'"
+            case (WbiDataTypes.QUANTITY, WbiDataTypes.WIKIBASE_ITEM):
+                error_msg = (
+                    f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')} to type Item"
+                )
+            case (WbiDataTypes.MONOLINGUALTEXT, WbiDataTypes.WIKIBASE_ITEM):
+                error_msg = (
+                    f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')} to type Item"
+                )
+            case _:
+                error_msg = f"Unable to resolve type mismatch. Can not convert {snak.datavalue.get('value')}"
+        if error_msg:
+            logger.debug(error_msg)
+            translation_result.errors.append(error_msg)
+        return new_snak

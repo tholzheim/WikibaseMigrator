@@ -107,6 +107,7 @@ class MigrationView:
                         "id": translation.created_entity.id,
                         "label": label,
                         "link": f"""<a href="{url}" target="_blank">{url}</a>""",
+                        "errors": str(translation.errors),
                     }
                 )
         ui.label("Migrated Entities").classes("mx-auto")
@@ -116,6 +117,12 @@ class MigrationView:
                     {"headerName": "ID", "field": "id"},
                     {"headerName": "Label", "field": "label"},
                     {"headerName": "URL", "field": "link"},
+                    {
+                        "headerName": "Migration Details",
+                        "field": "errors",
+                        "wrapText": True,
+                        "autoHeight": True,
+                    },
                 ],
                 "rowData": rows,
             },
