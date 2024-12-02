@@ -112,7 +112,8 @@ class Webserver:
 
     @user.setter
     def user(self, user: MediaWikiUserIdentity) -> None:
-        app.storage.user["user"] = user.model_dump_json()
+        if user:
+            app.storage.user["user"] = user.model_dump_json()
 
     async def get_user(self):
         """
