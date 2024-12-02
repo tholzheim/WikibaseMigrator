@@ -542,7 +542,7 @@ class WikibaseMigrator:
                 claim.mainsnak, translation_result=result, qualifiers=new_qualifiers, references=new_references
             )
             if new_claim is not None:
-                target.claims.add(new_claim)
+                target.claims.add(new_claim, action_if_exists=ActionIfExists.MERGE_REFS_OR_APPEND)
             else:
                 # ToDo: Handle missing property in target
                 pass
