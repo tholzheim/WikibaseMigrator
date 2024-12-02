@@ -1,5 +1,9 @@
 FROM python:3.12-alpine
 LABEL authors="tholzheim"
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+
+USER nonroot
 COPY . .
 
 COPY pyproject.toml .
