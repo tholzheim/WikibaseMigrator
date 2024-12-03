@@ -3,6 +3,7 @@
 [![GitHub License](https://img.shields.io/github/license/tholzheim/WikibaseMigrator)](https://github.com/tholzheim/WikibaseMigrator/blob/master/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/tholzheim/WikibaseMigrator?color=blue)](https://github.com/tholzheim/WikibaseMigrator/issues)
 [![Actions status](https://github.com/tholzheim/WikibaseMigrator/actions/workflows/CI.yml/badge.svg)](https://github.com/tholzheim/WikibaseMigrator/actions)
+[![Docker Pulls](https://img.shields.io/docker/pulls/tholzheim/wbmigrator)](https://hub.docker.com/r/tholzheim/wbmigrator)
 # <img src="https://raw.githubusercontent.com/tholzheim/WikibaseMigrator/refs/heads/master/src/wikibasemigrator/resources/logo.svg" width="48"> Wikibase Migrator
 
 WikibaseMigrator is a tool to migrate wikibase entities from one wikibase instance to another. 
