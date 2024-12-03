@@ -11,7 +11,7 @@ path = Path.home().joinpath(".config/WikibaseMigrator/profiles/WikibaseMigration
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(asctime)s %(levelname)-8s %(message)s",
+    format="%(asctime)s %(levelname)-8s %(name)-8s %(message)s",
 )
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("wikibaseintegrator").setLevel(logging.WARNING)

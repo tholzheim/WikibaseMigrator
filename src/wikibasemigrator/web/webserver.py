@@ -6,6 +6,7 @@ from authlib.integrations.starlette_client import OAuth
 from authlib.jose import jwt
 from authlib.jose.errors import InvalidTokenError
 from nicegui import Client, app, ui
+from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -112,8 +113,10 @@ class Webserver:
 
     @user.setter
     def user(self, user: MediaWikiUserIdentity) -> None:
-        if user:
+        if isinstance(user, BaseModel):
             app.storage.user["user"] = user.model_dump_json()
+        else:
+            app.storage.user["user"] = None
 
     async def get_user(self):
         """
@@ -133,6 +136,7 @@ class Webserver:
         :return:
         """
         try:
+            logger.info("Querying user info")
             resp = await self.oauth.mediawiki.post(
                 f"{self.profile.target.website}w/index.php", token=token, params={"title": "Special:OAuth/identify"}
             )
@@ -140,7 +144,8 @@ class Webserver:
             claims.validate()
             user = MediaWikiUserIdentity.model_validate(claims)
             logger.info(f"User {user.username} logged in")
-        except InvalidTokenError:
+        except InvalidTokenError as e:
+            logger.error("Error querying user info", exc_info=e)
             user = None
         return user
 
