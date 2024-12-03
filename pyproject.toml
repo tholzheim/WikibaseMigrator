@@ -10,7 +10,7 @@ authors = [
 maintainers = [
     {name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de"},
 ]
-version = "0.0.7"
+version = "0.0.8"
 readme = "README.md"
 license= "Apache-2.0"
 dependencies = [
@@ -46,9 +46,10 @@ dynamic = [ "description"]
 
 
 [project.urls]
-Home = ""
-Documentation = ""
-Source = ""
+Home = "https://github.com/tholzheim/WikibaseMigrator"
+Documentation = "https://github.com/tholzheim/WikibaseMigrator"
+Source = "https://github.com/tholzheim/WikibaseMigrator"
+Issues = "https://github.com/tholzheim/WikibaseMigrator/issues"
 
 [project.optional-dependencies]
 test = [
