@@ -17,16 +17,16 @@ The configuration is organized into several key sections:
 
 ### Basic Profile Information
 
-| Field            | Type                                        | Description                                                            | Required | Default |
-|------------------|---------------------------------------------|------------------------------------------------------------------------|----------|---------|
-| `name`           | string                                      | Unique name for the migration profile                                  | Yes      | -       |
-| `description`    | string                                      | Detailed description of the migration profile                          | Yes      | -       |
-| `source`         | [WikibaseConfig](#WikibaseConfig)           | Unique name for the migration profile                                  | Yes      | -       |
-| `target`         | [WikibaseConfig](#WikibaseConfig)           | Unique name for the migration profile                                  | Yes      | -       |
-| `mapping`        | [EntityMappingConfig](#EntityMappingConfig) | Unique name for the migration profile                                  | Yes      | -       |
-| `back_reference` | [BackReference](#BackReference)             | defines the back reference that should be set for items and properties | No       | -       |
-| `type_casts`     | [TypeCastConfig](#TypeCastConfig)           | Unique name for the migration profile                                  | No       | -       |
-### <a id="WikibaseConfig"></a> Wikibase Configuration (`WikibaseConfig`)
+| Field            | Type                                                              | Description                                                            | Required | Default |
+|------------------|-------------------------------------------------------------------|------------------------------------------------------------------------|----------|---------|
+| `name`           | string                                                            | Unique name for the migration profile                                  | Yes      | -       |
+| `description`    | string                                                            | Detailed description of the migration profile                          | Yes      | -       |
+| `source`         | [WikibaseConfig](#wikibase-configuration-wikibaseconfig)          | Unique name for the migration profile                                  | Yes      | -       |
+| `target`         | [WikibaseConfig](#wikibase-configuration-wikibaseconfig)          | Unique name for the migration profile                                  | Yes      | -       |
+| `mapping`        | [EntityMappingConfig](#mapping-configuration-entitymappingconfig) | Unique name for the migration profile                                  | Yes      | -       |
+| `back_reference` | [BackReference](#back-reference-configuration-backreference)      | defines the back reference that should be set for items and properties | No       | -       |
+| `type_casts`     | [TypeCastConfig](#type-casting-configuration-typecastconfig)      | Unique name for the migration profile                                  | No       | -       |
+### Wikibase Configuration (`WikibaseConfig`)
 
 
 Each Wikibase (source and target) is configured with the following options:
@@ -51,7 +51,7 @@ Each Wikibase (source and target) is configured with the following options:
 
 > Currently only OAUTH 1.a is supported. See [OAuth/For Developers](https://www.mediawiki.org/wiki/OAuth/For_Developers) for details on how to register your OAuth consumer
 
-### <a id="EntityMappingConfig"></a> Mapping Configuration (`EntityMappingConfig`)
+### Mapping Configuration (`EntityMappingConfig`)
 
 | Field                    | Type            | Description                                      | Required | Default                                |
 |--------------------------|-----------------|--------------------------------------------------|----------|----------------------------------------|
@@ -63,23 +63,23 @@ Each Wikibase (source and target) is configured with the following options:
 | `ignore_no_values`       | boolean         | Ignore properties with no values                 | No       | `false`                                |
 | `ignore_unknown_values`  | boolean         | Ignore unknown values during migration           | No       | `false`                                |
 
-### <a id="BackReference"></a> Back Reference Configuration (`BackReference`)
+### Back Reference Configuration (`BackReference`)
 
 | Field      | Type                                        | Description                         | Required | Default |
 |------------|---------------------------------------------|-------------------------------------|----------|---------|
-| `item`     | [EntityBackReference](#EntityBackReference) | Back reference definition for items | No       | -       |
-| `property` | [EntityBackReference](#EntityBackReference) | Back reference type for properties  | No       | -       |
+| `item`     | [EntityBackReference](#entity-back-reference-entitybackreference) | Back reference definition for items | No       | -       |
+| `property` | [EntityBackReference](#entity-back-reference-entitybackreference) | Back reference type for properties  | No       | -       |
 
 > If a back reference is not defined the migration is performed without adding a reference to the origin entity.
 > Otherwise this will have no further effect on the migration.
 
-#### <a id="EntityBackReference"></a> Entity Back Reference (`EntityBackReference`)
+#### Entity Back Reference (`EntityBackReference`)
 | Field  | Type   | Description                                              | Required | Default |
 |--------|--------|----------------------------------------------------------|----------|---------|
 | `type` | enum   | Back reference type for items (`Sitelink` or `Property`) | Yes      | -       |
 | `id`   | string | Property ID / Sitelink ID to use for the back reference  | Yes      | -       |
 
-### <a id="TypeCastConfig"></a> Type Casting Configuration (`TypeCastConfig`) 
+### Type Casting Configuration (`TypeCastConfig`) 
 | Field               | Type    | Description                                                                          | Required | Default |
 |---------------------|---------|--------------------------------------------------------------------------------------|----------|---------|
 | `enabled`           | boolean | Enable property type casting                                                         | No       | `true`  |
