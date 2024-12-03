@@ -18,6 +18,7 @@ class ConfigPage(Webpage):
             self.show_wikibase_configs()
             self.show_mapping_config()
             self.show_back_reference()
+            self.show_casting_config()
 
     def show_wikibase_configs(self):
         ui.markdown(f"""
@@ -83,4 +84,17 @@ class ConfigPage(Webpage):
   * id: {self.profile.back_reference.property.property_id}
             
             
+            """)
+
+    def show_casting_config(self):
+        """
+        Show the casting config of the migrator profile
+        """
+        with ui.element("div").classes(self.COLUMN):
+            ui.markdown(f"""
+## Type Casting Configuration
+> type castings to apply in case of property type mismatches in the mapping
+
+* **Enabled**: {self.profile.type_casts.enabled}
+* **Fallback language**: {self.profile.type_casts.fallback_language}
             """)
