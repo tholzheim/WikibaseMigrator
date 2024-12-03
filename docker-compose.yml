@@ -1,8 +1,7 @@
 services:
     app:
         container_name: wbmigrator
-        build:
-            context: ./
+        image: tholzheim/wbmigrator:latest
         restart: always
         ports:
             - 8009:8080

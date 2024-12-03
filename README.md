@@ -29,6 +29,14 @@ pip install .[test]
 * WikibaseMigrator offers a cli tool and a web UI.
 * Migration is defined with a migration profile which needs to be defined. For details on the definition see [Wikibase Migration Profile Configuration](./docs/migration_profile_config.md)
 
+## Docker
+
+```commandline
+docker run  -p 8009:8080 -v ~/.config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml:/config.yaml tholzheim/wbmigrator
+```
+
+> Exchange `~/.config/WikibaseMigrator/profiles/WikibaseMigrationTest.yaml` with the location of your migration profile configuration if needed 
+
 ## Web UI
 The webserver can be started over the cli with 
 ```shell
