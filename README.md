@@ -10,7 +10,13 @@ During the migration process all used Item and Property IDs are mapped to the ID
 
 # Installation
 
-Install wikibasemigrator after cloning with
+```shell
+pip install wikibasemigrator
+```
+
+## for Development
+
+Install WikibaseMigrator after cloning with
 ```shell
 pip install .
 ```
