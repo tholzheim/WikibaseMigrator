@@ -185,3 +185,5 @@ class Webpage:
             ui.icon(icon, color="green" if self.endpoints_availability.all_available() else "red").classes(
                 "hover:cursor-pointer"
             ).on("click", dialog.open)
+            if self.endpoints_availability.all_available() and self.status_check:
+                self.status_check.deactivate()
