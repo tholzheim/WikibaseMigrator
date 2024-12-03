@@ -19,7 +19,8 @@ pip install .[test]
 ```
 
 # How to use
-WikibaseMigrator offers a cli tool and a web UI
+* WikibaseMigrator offers a cli tool and a web UI.
+* Migration is defined with a migration profile which needs to be defined. For details on the definition see [Wikibase Migration Profile Configuration](./docs/migration_profile_config.md)
 
 ## Web UI
 The webserver can be started over the cli with 

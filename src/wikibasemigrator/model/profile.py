@@ -119,7 +119,7 @@ class EntityBackReference(BaseModel):
 
 class BackReference(BaseModel):
     """
-    defines the back reference for items and proeprties
+    defines the back reference for items and properties
     """
 
     item: EntityBackReference
