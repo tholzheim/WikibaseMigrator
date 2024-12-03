@@ -1,0 +1,29 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: WikibaseMigrator
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Tim
+    family-names: Holzheim
+    email: tim.holzheim@rwth-aachen.de
+    orcid: 'https://orcid.org/0000-0003-2533-6363'
+repository-code: 'https://github.com/tholzheim/WikibaseMigrator'
+abstract: >-
+  WikibaseMigrator is a tool to migrate wikibase entities
+  from one wikibase instance to another. During the
+  migration process all used Item and Property IDs are
+  mapped to the IDs from the target Wikibase instance.
+keywords:
+  - Wikibase
+  - Wikidata
+  - migration
+  - mapping
+license: Apache-2.0
+commit: 'ddb806e  '
+version: 0.0.7
+date-released: '2024-12-03'
