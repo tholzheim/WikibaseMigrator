@@ -141,7 +141,7 @@ class Webserver:
                 f"{self.profile.target.website}w/index.php", token=token, params={"title": "Special:OAuth/identify"}
             )
             claims = jwt.decode(resp.text, self.profile.target.consumer_secret)
-            claims.validate()
+            claims.validate(leeway=10)
             user = MediaWikiUserIdentity.model_validate(claims)
             logger.info(f"User {user.username} logged in")
         except InvalidTokenError as e:
