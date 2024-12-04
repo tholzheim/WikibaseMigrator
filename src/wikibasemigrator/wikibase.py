@@ -39,7 +39,7 @@ class WbiDataTypes(str, Enum):
     COMMONS_MEDIA = "commonsMedia"
     QUANTITY = "quantity"
     MONOLINGUALTEXT = "monolingualtext"
-    GLOBE_COORDINATE = "globecoordinate"
+    GLOBE_COORDINATE = "globe-coordinate"
     ENTITY_SCHEMA = "entity-schema"
     URL = "url"
     PROPERTY = "property"
