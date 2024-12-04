@@ -45,7 +45,7 @@ class TestWikibaseMigrationProfile(unittest.TestCase):
             actual_config = profile.get_wikibase_config_by_name(expected_config.name)
             self.assertEqual(actual_config, expected_config)
 
-    def test_get_allowed_sidelinks(self):
+    def test_get_allowed_sitelinks(self):
         """
         test get_allowed_sitelinks
         """

@@ -46,6 +46,8 @@ mapping:
       ?factgrid_item wdt:P8 ?source_entity.
       BIND(STRAFTER(STR(?factgrid_item), "https://wbmigration-test.wikibase.cloud/entity/") AS ?target_entity)
     }
+  languages: ["de", "en"]
+  sitelinks: ["wikidatawiki", "dewiki", "enwiki"]
 back_reference:
   item:
     type: Property
