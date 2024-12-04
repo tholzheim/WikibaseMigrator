@@ -161,7 +161,7 @@ class WikibaseMigrationProfile(BaseModel):
 
     def get_allowed_sitelinks(self) -> list[str]:
         if self.mapping.sitelinks is None:
-            self.mapping.sitelinks = ["enwiki", "dewiki", "wikidatawiki"]
+            self.mapping.sitelinks = []
         return self.mapping.sitelinks
 
     def get_wikibase_config_of_mapping_location(self) -> WikibaseConfig:
