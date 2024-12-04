@@ -62,7 +62,7 @@ class ConfigPage(Webpage):
             ui.markdown("**Property mapping query**:")
             ui.code(self.profile.mapping.property_mapping_query, language="sparql").classes("w-full")
             ui.markdown(f"**Languages**: {self.profile.get_allowed_languages()}")
-            ui.markdown(f"**Sidelinks**: {self.profile.get_allowed_sitelinks()}")
+            ui.markdown(f"**Sitelinks**: {self.profile.get_allowed_sitelinks()}")
             ui.markdown(f"**Ignore No Values**: {self.profile.mapping.ignore_no_values}")
             ui.markdown(f"**Ignore Unknown Values**: {self.profile.mapping.ignore_unknown_values}")
 
