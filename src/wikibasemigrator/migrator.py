@@ -750,7 +750,7 @@ class WikibaseMigrator:
     def migrate_entities_to_target(
         self,
         translations: EntitySetTranslationResult,
-        summary: str,
+        summary: str | None,
         entity_done_callback: Callable[[Future], None] | None = None,
     ) -> list[ItemEntity | PropertyEntity]:
         """
