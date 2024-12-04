@@ -87,7 +87,7 @@ def migrate(
         str,
         typer.Option(help="The configuration file defining the Wikibases", autocompletion=complete_profile_paths),
     ],
-    summary: Annotated[str, typer.Option(help="Summary message to add to the wikibase edits")],
+    summary: Annotated[str | None, typer.Option(help="Summary message to add to the wikibase edits")] = None,
     entity: Annotated[list[str] | None, typer.Option(help="The items to migrate")] = None,
     query: Annotated[
         str | None,

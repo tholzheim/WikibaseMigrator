@@ -263,10 +263,11 @@ class TranslationView:
         """
         if not self.translations.entities:
             ui.notify("No entities to migrate. (Selected entities might already exist)", type="warning")
-        elif not self.summary:
-            ui.notify("Please provide a summary for the migration", type="warning")
         else:
-            await self.migration_callback(self.translations, self.summary)
+            summary = self.summary
+            if not summary:
+                summary = None
+            await self.migration_callback(self.translations, summary)
 
     def display_missing_properties(self):
         """
