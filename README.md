@@ -180,8 +180,8 @@ flowchart TD
     stop@{ shape: framed-circle, label: "Stop" }
     migrator-->stop
 ```
-## Mering Entities
-If an entity already exists in the target wikibase instance the source entity is first translated to the target and than merged with the target entity.
+## Merging Entities
+If an entity already exists in the target wikibase instance the source entity is first translated to the target and then merged with the target entity.
 The merging of entities differs from the default wikibase entity merging for cases where the statement does not have qualifiers. In this case if the statement value is equal the qualifiers of the source are merged into the target. 
 Otherwise, the merge results in an additional statement to preserve both qualifier information (equal to the wikibase entity merge)
 
