@@ -462,7 +462,6 @@ class WikibaseMigrator:
     ) -> EntityTranslationResult:
         """
         translates given entity from source to target wikibase instance
-        ToDo: refactor to reduce complexity
         :param with_back_reference:
         :param allowed_sitelinks:
         :param allowed_languages:
