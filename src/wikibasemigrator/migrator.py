@@ -676,13 +676,15 @@ class WikibaseMigrator:
                     **kwargs,
                 )
             case WbiDataTypes.MONOLINGUALTEXT:
-                new_snak = datatypes.MonolingualText(
-                    prop_nr=new_property_number,
-                    text=snak.datavalue["value"].get("text", None),
-                    language=snak.datavalue["value"].get("language", None),
-                    snaktype=snak.snaktype,
-                    **kwargs,
-                )
+                language = snak.datavalue.get("value", {}).get("language", None)
+                if language in self.profile.get_allowed_languages():
+                    new_snak = datatypes.MonolingualText(
+                        prop_nr=new_property_number,
+                        text=snak.datavalue["value"].get("text", None),
+                        language=language,
+                        snaktype=snak.snaktype,
+                        **kwargs,
+                    )
             case WbiDataTypes.GLOBE_COORDINATE:
                 new_snak = datatypes.GlobeCoordinate(
                     prop_nr=new_property_number,
