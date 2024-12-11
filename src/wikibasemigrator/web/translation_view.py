@@ -321,6 +321,7 @@ class TranslationView:
                         {"headerName": "URL", "field": "link"},
                     ],
                     "rowData": rows,
+                    "enableCellTextSelection": True,
                 },
                 html_columns=[2],
             )
@@ -371,6 +372,7 @@ class TranslationView:
                         {"headerName": "URL", "field": "link"},
                     ],
                     "rowData": rows,
+                    "enableCellTextSelection": True,
                 },
                 html_columns=[2],
             )
@@ -402,6 +404,7 @@ class TranslationView:
                             {"headerName": "Target", "field": "target"},
                         ],
                         "rowData": rows,
+                        "enableCellTextSelection": True,
                     },
                     html_columns=[0, 1],
                 )
@@ -444,6 +447,7 @@ class TranslationView:
                         {"headerName": "Target", "field": "target"},
                     ],
                     "rowData": rows,
+                    "enableCellTextSelection": True,
                 },
                 html_columns=[0, 1],
             )

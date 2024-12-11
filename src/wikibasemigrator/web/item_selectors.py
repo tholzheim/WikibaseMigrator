@@ -68,8 +68,8 @@ class ItemSelectorElement(WikibaseItemSelector):
         super().__init__(profile, selection_callback)
         self.value: str = ""
         self.rows: list[dict] = []
-        self.selection_display: ui.table | None = None
         self._worker: asyncio.Task | None = None
+        self._preview_table_container: ui.element | None = None
 
     def setup_ui(self):
         """
@@ -90,23 +90,36 @@ class ItemSelectorElement(WikibaseItemSelector):
             entity_input.on("keydown.enter", self.handle_selection_callback)
             self._add_translation_button_info_icon()
             ui.button("Run matching!", on_click=self.handle_selection_callback)
+            self._preview_table_container = ui.element("div")
 
+    def update_preview_table(self):
+        """
+        update the preview table
+        :return:
+        """
+        if self._preview_table_container is None:
+            logger.debug("Preview table not yet created → Skipping selected entity preview")
+            return
+        rows = []
+        for row in self.rows:
+            qid = row.get("qid")
+            label = row.get("label")
+            url = self.profile.source.item_prefix.unicode_string() + qid
+            rows.append({"id": f"""<a href="{url}" target="_blank">{qid}</a>""", "label": label})
+        self._preview_table_container.clear()
+        with self._preview_table_container:
             ui.label("Selected entities:")
-            with ui.element(tag="div"):
-                columns = [
-                    {"name": "qid", "label": "Qid", "field": "qid", "required": True, "align": "left"},
-                    {"name": "label", "label": "Label", "field": "label", "sortable": True, "align": "left"},
-                ]
-
-                self.selection_display = ui.table(columns=columns, rows=self.rows, row_key="qid")
-                self.selection_display.add_slot(
-                    "body-cell-qid",
-                    f"""
-                    <q-td :props="props">
-                        <a :href="'{self.profile.source.item_prefix}' + props.value">{{{{ props.value }}}}</a>
-                    </q-td>
-                """,
-                )
+            ui.aggrid(
+                {
+                    "columnDefs": [
+                        {"headerName": "Entity ID", "field": "id"},
+                        {"headerName": "Label", "field": "label"},
+                    ],
+                    "rowData": rows,
+                    "enableCellTextSelection": True,
+                },
+                html_columns=[0],
+            )
 
     def value_is_valid(self) -> bool:
         """
@@ -133,9 +146,6 @@ class ItemSelectorElement(WikibaseItemSelector):
         return bool(pattern.match(value))
 
     async def _handle_value_change(self, event: ValueChangeEventArguments) -> None:
-        if self.selection_display is None:
-            logger.debug("Selection display is not setup → Abort lookup and display of labels")
-            return
         if self.value and self._validate_value(self.value):
             if self._worker and not self._worker.done():
                 self._worker.cancel()
@@ -154,7 +164,7 @@ class ItemSelectorElement(WikibaseItemSelector):
                 self.rows = response
             else:
                 self.rows = []
-            self.selection_display.update_rows(self.rows)
+            self.update_preview_table()
 
 
 class QueryItemSelectorElement(WikibaseItemSelector):

@@ -125,6 +125,7 @@ class MigrationView:
                     },
                 ],
                 "rowData": rows,
+                "enableCellTextSelection": True,
             },
             html_columns=[2],
         )
@@ -139,6 +140,7 @@ class MigrationView:
                             "field": "errors",
                             "wrapText": True,
                             "autoHeight": True,
+                            "enableCellTextSelection": True,
                         },
                     ],
                     "rowData": rows_errors,
