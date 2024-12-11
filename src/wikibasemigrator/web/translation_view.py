@@ -52,7 +52,7 @@ def _get_csv_string(records: list[dict], fieldnames: list[str] | None = None) ->
     :return:
     """
     if fieldnames is None:
-        fieldnames = records[0].keys()
+        fieldnames = list(records[0].keys())
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
@@ -67,7 +67,7 @@ def _get_tsv_string(records: list[dict], fieldnames: list[str] | None = None) ->
     :return:
     """
     if fieldnames is None:
-        fieldnames = records[0].keys()
+        fieldnames = list(records[0].keys())
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter="\t", lineterminator="\n", extrasaction="ignore")
     writer.writeheader()
