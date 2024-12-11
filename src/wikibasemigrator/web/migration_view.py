@@ -101,7 +101,14 @@ class MigrationView:
                         "errors": str(translation.errors),
                     }
                 )
-                csv_error_rows.append({"id": entity_id, "label": label, "url": url, "errors": str(translation.errors)})
+                csv_error_rows.append(
+                    {
+                        "id": entity_id,
+                        "label": label,
+                        "url": url,
+                        "errors": str(translation.errors),
+                    }
+                )
             else:
                 label = (
                     translation.created_entity.labels.get("en").value
@@ -110,18 +117,31 @@ class MigrationView:
                 )
                 entity_id = translation.created_entity.id
                 url = f"{self.profile.target.item_prefix}{entity_id}"
+                source_url = f"{self.profile.source.item_prefix}{translation.original_entity.id}"
                 rows.append(
                     {
                         "id": entity_id,
                         "label": label,
                         "link": f"""<a href="{url}" target="_blank">{url}</a>""",
+                        "source_entity": f"""<a href="{source_url}" target="_blank">{source_url}</a>""",
                         "migration_details": str(translation.errors),
                     }
                 )
-                csv_rows.append({"id": entity_id, "label": label, "url": url, "errors": str(translation.errors)})
+                csv_rows.append(
+                    {
+                        "id": entity_id,
+                        "label": label,
+                        "url": url,
+                        "source_id": translation.original_entity.id,
+                        "source_url": source_url,
+                        "errors": str(translation.errors),
+                    }
+                )
         ui.label("Migrated Entities").classes("mx-auto")
         self.display_table_download(
-            csv_rows, "migrated_entities", fieldnames=["id", "label", "url", "migration_details"]
+            csv_rows,
+            "migrated_entities",
+            fieldnames=["id", "label", "url", "source_id", "source_url", "migration_details"],
         )
         ui.aggrid(
             {
@@ -129,6 +149,7 @@ class MigrationView:
                     {"headerName": "ID", "field": "id"},
                     {"headerName": "Label", "field": "label"},
                     {"headerName": "URL", "field": "link"},
+                    {"headerName": "Source URL", "field": "source_entity"},
                     {
                         "headerName": "Migration Details",
                         "field": "errors",
@@ -139,7 +160,7 @@ class MigrationView:
                 "rowData": rows,
                 "enableCellTextSelection": True,
             },
-            html_columns=[2],
+            html_columns=[2, 3],
         )
         if rows_errors:
             ui.label("Failed Migrations").classes("mx-auto")
