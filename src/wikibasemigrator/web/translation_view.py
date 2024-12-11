@@ -45,14 +45,31 @@ def _get_entity_label(entity_id: str, entity_label: str) -> str:
     return label
 
 
-def _get_csv_string(records: list[dict]) -> bytes:
+def _get_csv_string(records: list[dict], fieldnames: list[str] | None = None) -> bytes:
     """
     convert records to csv string
     :param records:
     :return:
     """
+    if fieldnames is None:
+        fieldnames = records[0].keys()
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=records[0].keys())
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(records)
+    return output.getvalue().encode()
+
+
+def _get_tsv_string(records: list[dict], fieldnames: list[str] | None = None) -> bytes:
+    """
+    convert records to tsv string
+    :param records:
+    :return:
+    """
+    if fieldnames is None:
+        fieldnames = records[0].keys()
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter="\t", lineterminator="\n", extrasaction="ignore")
     writer.writeheader()
     writer.writerows(records)
     return output.getvalue().encode()
@@ -308,6 +325,13 @@ class TranslationView:
                         ),
                     )
                     ui.item(
+                        "table (.tsv)",
+                        on_click=lambda: ui.download(
+                            _get_tsv_string(csv_rows),
+                            f"{datetime.datetime.now().isoformat()}_missing_properties.tsv",
+                        ),
+                    )
+                    ui.item(
                         "oneliner (.txt)",
                         on_click=lambda: ui.download(
                             ",".join(values).encode(), f"{datetime.datetime.now().isoformat()}_missing_properties.txt"
@@ -355,7 +379,14 @@ class TranslationView:
                         "table (.csv)",
                         on_click=lambda: ui.download(
                             _get_csv_string(csv_rows),
-                            f"{datetime.datetime.now().isoformat()}_missing_properties.csv",
+                            f"{datetime.datetime.now().isoformat()}_missing_items.csv",
+                        ),
+                    )
+                    ui.item(
+                        "table (.tsv)",
+                        on_click=lambda: ui.download(
+                            _get_csv_string(csv_rows),
+                            f"{datetime.datetime.now().isoformat()}_missing_items.tsv",
                         ),
                     )
                     ui.item(
