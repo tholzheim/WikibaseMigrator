@@ -46,6 +46,16 @@ class WikibaseItemSelector(ABC):
         """
         await self.selection_callback(self.get_selected_entities())
 
+    def _add_translation_button_info_icon(self):
+        """
+        adds info icon for the translation button
+        :return:
+        """
+        info_icon = ui.icon("info").classes("text-primary")
+        info_icon.tooltip(
+            f"Button starts the translation process that matches the {self.profile.source.name} IDs against the corresponding IDs of {self.profile.target.name}. This step does not change the {self.profile.target.name} Wikibase instance yet."
+        )  # noqa: E501
+
 
 class ItemSelectorElement(WikibaseItemSelector):
     """
@@ -78,7 +88,8 @@ class ItemSelectorElement(WikibaseItemSelector):
             entity_input.props("clearable").props("outlined")
             entity_input.bind_value(self)
             entity_input.on("keydown.enter", self.handle_selection_callback)
-            ui.button("Translate", on_click=self.handle_selection_callback)
+            self._add_translation_button_info_icon()
+            translate_btn = ui.button("Run matching!", on_click=self.handle_selection_callback)
 
             ui.label("Selected entities:")
             with ui.element(tag="div"):
@@ -234,8 +245,9 @@ class QueryItemSelectorElement(WikibaseItemSelector):
                             "bg-red rounded-full px-2 py-1 flex-none"
                         )
                         valid_result = False
+                self._add_translation_button_info_icon()
                 translate_btn = ui.button(
-                    "Translate",
+                    "Run matching!",
                     on_click=self.handle_selection_callback,
                 )
                 translate_btn.set_enabled(valid_result)

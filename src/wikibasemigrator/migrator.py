@@ -409,7 +409,7 @@ class WikibaseMigrator:
         translated_entities = [self.translate_entity(entity) for entity in entities]
         translation_results = EntitySetTranslationResult.from_list(translated_entities)
         if merge_existing_entities:
-            progress_callback("Merging existing entities")
+            progress_callback("Augment existing entities")
             self.merge_existing_entities(translation_results)
         return translation_results
 

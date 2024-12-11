@@ -419,7 +419,7 @@ class TranslationView:
                 merge_counter += 1
                 target_label = self.target_labels.get(target_id, "")
                 target_url = f"{self.profile.target.item_prefix}{target_id}"
-                target = f"""Merging with <a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>"""  # noqa: E501
+                target = f"""Augment <a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>"""  # noqa: E501
             rows.append(
                 {
                     "source": f"""<a href="{source_url}" target="_blank">{_get_entity_label(source_id, source_label)}</a>""",  # noqa: E501
@@ -429,7 +429,7 @@ class TranslationView:
         with ui.element("div").classes("flex flex-col gap-2 w-full"):
             ui.label("Translation result").classes(self.CENTERED_HEADLINE_STYLE)
             ui.label(f"Creating {created_new_counter} new entity entries")
-            ui.label(f"Merging {merge_counter} entities with existing entries")
+            ui.label(f"Augment {merge_counter} entities with existing entries")
             ui.aggrid(
                 {
                     "columnDefs": [

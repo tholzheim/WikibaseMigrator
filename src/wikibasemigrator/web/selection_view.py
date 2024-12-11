@@ -50,7 +50,7 @@ class SelectionView:
 
     def switch_to_selector(self, selector_id: int) -> None:
         """
-        Swithc go given selector
+        Switch go given selector
         :param selector_id: id of the selector to switch to
         :return: None
         """
