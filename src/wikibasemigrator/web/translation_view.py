@@ -135,7 +135,14 @@ class TranslationView:
         """
         with ui.element("div").classes("container " + self.ROW_STYLE):
             ui.input(label="summary", placeholder="Migrated items for...").bind_value(self, "summary").classes("grow")
-            ui.button(text="Migrate", on_click=self.migrate).classes("max-w-1/3")
+            btn_label = "Migrate"
+            if self.profile.ui_customizations.migration_button_label is not None:
+                btn_label = self.profile.ui_customizations.migration_button_label
+            info_icon = ui.icon("info").classes("text-primary")
+            info_icon.tooltip(
+                f"Migrate translated entities to {self.profile.target.name}. This step will edit the wiki!"
+            )  # noqa: E501
+            ui.button(text=btn_label, on_click=self.migrate).classes("max-w-1/3")
 
     def display_translation_item_viewer(self):
         """

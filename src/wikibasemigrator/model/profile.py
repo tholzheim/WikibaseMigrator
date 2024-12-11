@@ -126,6 +126,14 @@ class BackReference(BaseModel):
     property: EntityBackReference
 
 
+class UiCustomization(BaseModel):
+    """
+    defines different UI customizations
+    """
+
+    migration_button_label: str | None = None
+
+
 class WikibaseMigrationProfile(BaseModel):
     """
     Wikibase migration profile configuration
@@ -138,6 +146,7 @@ class WikibaseMigrationProfile(BaseModel):
     mapping: EntityMappingConfig
     back_reference: BackReference | None = None
     type_casts: TypeCastConfig = TypeCastConfig()
+    ui_customizations: UiCustomization | None = UiCustomization()
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:
         """
