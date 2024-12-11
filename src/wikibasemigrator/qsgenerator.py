@@ -209,8 +209,8 @@ class QuickStatementsGenerator:
                 tolerance = snak.datavalue["value"].get("tolerance", None)
                 line = QuantityLine(subject=subject, predicate=predicate, target=amount, tolerance=tolerance, unit=unit)
             else:
-                print(datatype)
-                # ToDo: Coordiantes
+                logger.debug("Coordinates are not converted to Quickstatements → not supported at the moment")
+                # ToDo: Coordinates
                 continue
             lines.append(line)
         return lines
