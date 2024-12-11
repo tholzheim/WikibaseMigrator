@@ -41,30 +41,55 @@ class WikibaseMigrator:
 
     @property
     def target_wbi(self) -> WikibaseIntegrator:
+        """
+        Get WikibaseIntegrator instance for the target wikibase
+        :return:
+        """
         if self._target_wbi is None:
             self._target_wbi = self.get_wikibase_integrator(self.profile.target)
         return self._target_wbi
 
     @property
     def source_wbi(self) -> WikibaseIntegrator:
+        """
+        Get WikibaseIntegrator instance for the source wikibase
+        :return:
+        """
         if self._source_wbi is None:
             self._source_wbi = self.get_wikibase_integrator(self.profile.source)
         return self._source_wbi
 
-    def get_items_from_source(self, item_ids: list[str]) -> list[WbEntity]:
-        return self.get_items(item_ids, self.profile.source, self.source_wbi)
+    def get_entities_from_source(self, entity_ids: list[str]) -> list[WbEntity]:
+        """
+        Get entities from source
+        :param entity_ids: ids of entity to retrieve
+        :return:
+        """
+        return self.get_entities(entity_ids, self.profile.source, self.source_wbi)
 
-    def get_items_from_target(self, item_ids: list[str]) -> list[WbEntity]:
-        return self.get_items(item_ids, self.profile.target, self.target_wbi)
+    def get_entities_from_target(self, entity_ids: list[str]) -> list[WbEntity]:
+        """
+        Get entities from target wikibase
+        :param entity_ids: ids of entity to retrieve
+        :return:
+        """
+        return self.get_entities(entity_ids, self.profile.target, self.target_wbi)
 
-    def get_items(
-        self, item_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator, max_workers: int = 10
+    def get_entities(
+        self, entity_ids: list[str], wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator, max_workers: int = 10
     ) -> list[WbEntity]:
-        # ToDo: WARNING:urllib3.connectionpool:Connection pool is full, [...] Connection pool size: 10  # noqa: E501
+        """
+        Get given list of entities as WikibaseIntegrator object from the given wikibase
+        :param entity_ids: list of ids to fetch
+        :param wikibase_config: config file of the wikibase to get the
+        :param wbi:
+        :param max_workers:
+        :return:
+        """
         result: list[WbEntity] = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
-            for chunk in Query.chunks(item_ids, 50):
+            for chunk in Query.chunks(entity_ids, 50):
                 future = executor.submit(
                     self.get_entity_batch, entity_ids=chunk, wbi=wbi, wikibase_config=wikibase_config
                 )
@@ -81,6 +106,8 @@ class WikibaseMigrator:
     ) -> list[WbEntity]:
         """
         Get entities in batches from the wikibase
+        :param wikibase_config:
+        :param wbi:
         :param entity_ids:
         :return:
         """
@@ -92,7 +119,7 @@ class WikibaseMigrator:
         is_bot = wbi.is_bot
         start = datetime.now()
         lod = mediawiki_api_call_helper(
-            mediawiki_api_url=wikibase_config.mediawiki_api_url,
+            mediawiki_api_url=wikibase_config.mediawiki_api_url.unicode_string(),
             data=params,
             login=login,
             allow_anonymous=allow_anonymous,
@@ -125,7 +152,7 @@ class WikibaseMigrator:
         :param qid: id of the item to retrieve
         :return: WbEntity or None if not existent
         """
-        return self.get_item(entity_id=qid, wikibase_config=self.profile.source, wbi=self.source_wbi)
+        return self.get_entity(entity_id=qid, wikibase_config=self.profile.source, wbi=self.source_wbi)
 
     def get_item_from_target(self, qid: str) -> WbEntity | None:
         """
@@ -133,7 +160,7 @@ class WikibaseMigrator:
         :param qid: id of the item to retrieve
         :return: WbEntity or None if not existent
         """
-        return self.get_item(entity_id=qid, wikibase_config=self.profile.target, wbi=self.target_wbi)
+        return self.get_entity(entity_id=qid, wikibase_config=self.profile.target, wbi=self.target_wbi)
 
     @staticmethod
     def get_wikibase_integrator(wikibase_config: WikibaseConfig) -> WikibaseIntegrator:
@@ -192,11 +219,12 @@ class WikibaseMigrator:
         return login
 
     @classmethod
-    def get_item(cls, entity_id: str, wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator) -> WbEntity | None:
+    def get_entity(cls, entity_id: str, wikibase_config: WikibaseConfig, wbi: WikibaseIntegrator) -> WbEntity | None:
         """
         Get item from given wikibase
         :param entity_id: id of the item to retrieve
         :param wikibase_config:
+        :param wbi:
         :return: WbEntity or None if not existent
         """
         try:
@@ -328,7 +356,7 @@ class WikibaseMigrator:
     def prepare_mapper_cache_by_ids(self, item_ids: list[str]):
         """
         prepare the mapper cache with the mappings for the given item
-        :param item:
+        :param item_ids:
         :return:
         """
         self.mapper.prepare_cache_for(item_ids)
@@ -336,7 +364,6 @@ class WikibaseMigrator:
     def add_translation_result_mappings(self, translation_result: EntityTranslationResult):
         """
         add translation mappings that are used by the item to the translation result
-        :param item:
         :param translation_result:
         :return:
         """
@@ -360,11 +387,16 @@ class WikibaseMigrator:
         if progress_callback is None:
 
             def progress_callback(x: str):
+                """
+                default progress callback that outputs the given message as debug logging message
+                :param x: progress message
+                :return: None
+                """
                 logger.debug(x)
                 return None
 
         progress_callback(f"Fetching {len(item_ids)} items records from {self.profile.source.name}")
-        entities = self.get_items_from_source(item_ids)
+        entities = self.get_entities_from_source(item_ids)
         used_ids = set()
         for item in entities:
             used_ids.update(self.get_all_entity_ids(item))
@@ -399,7 +431,7 @@ class WikibaseMigrator:
             for source, target in self.mapper.get_existing_mappings().items()
             if source in source_existing_entity_ids
         }
-        target_entities = self.get_items_from_target(list(merge_mapping.values()))
+        target_entities = self.get_entities_from_target(list(merge_mapping.values()))
         target_entities_by_id = {entity.id: entity for entity in target_entities}
         merger = EntityMerger()
         for translated_entity in entities_to_merge:
@@ -417,6 +449,7 @@ class WikibaseMigrator:
             except Exception as e:
                 translated_entity.errors.append(str(e))
                 logger.exception(e)
+                merged_item = None
             if merged_item is not None:
                 translated_entity.entity = merged_item
 
@@ -531,6 +564,7 @@ class WikibaseMigrator:
     def translate_claims(self, source: WbEntity, target: WbEntity, result: EntityTranslationResult) -> None:
         """
         translate the claims from the source entity to the target entity
+        :param result:
         :param source:
         :param target:
         :return:
@@ -545,7 +579,7 @@ class WikibaseMigrator:
                 try:
                     target.claims.add(new_claim, action_if_exists=ActionIfExists.MERGE_REFS_OR_APPEND)
                 except Exception as e:
-                    error_msg = f"Unable to add claim {new_claim.mainsnak.property_number} with value {new_claim.mainsnak.datavalue} to entity. Error {e}"
+                    error_msg = f"Unable to add claim {new_claim.mainsnak.property_number} with value {new_claim.mainsnak.datavalue} to entity. Error {e}"  # noqa: E501
                     result.errors.append(error_msg)
                     logging.error(e)
             else:
@@ -745,7 +779,7 @@ class WikibaseMigrator:
                 if entity.ETYPE in WikibaseEntityTypes.support_sitelinks():
                     entity.sitelinks.set(site=back_reference.property_id, title=source_id)
                 else:
-                    logger.warning(f"Type {entity.ETYPE} does not support sidelinks define a different back reference")
+                    logger.warning(f"Type {entity.ETYPE} does not support sitelinks define a different back reference")
                     raise ValueError("Unsupported back reference type and property combination")
             case EntityBackReferenceType.PROPERTY:
                 claim = datatypes.ExternalID(
@@ -777,7 +811,7 @@ class WikibaseMigrator:
                     self._migrate_entity,
                     entity=entity,
                     summary=summary,
-                    mediawiki_api_url=self.profile.target.mediawiki_api_url,
+                    mediawiki_api_url=self.profile.target.mediawiki_api_url.unicode_string(),
                     tags=self.profile.target.get_tags(),
                     login=login,
                 )
@@ -806,14 +840,13 @@ class WikibaseMigrator:
         :return: entity with the ID
         """
         try:
-            entity_json = entity.entity.get_json()
             if logger.level <= logging.DEBUG:
+                entity_json = entity.entity.get_json()
                 path = Path(tempfile.gettempdir()).joinpath(
                     f"WikibaseMigrator/migrations/{datetime.now()}_{entity.original_entity.id}.json"
                 )
                 path.parent.mkdir(parents=True, exist_ok=True)
-                with open(path, "w") as f:
-                    json.dump(entity_json, f)
+                path.write_text(json.dumps(entity_json, indent=4))
             res = entity.entity.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags, login=login)
             entity.created_entity = res
         except MWApiError as e:
@@ -830,7 +863,7 @@ class WikibaseMigrator:
     def has_type_mismatch(self, source_pid, target_pid) -> bool:
         """
         Checks if source and target property have a type mismatch
-        :param source_pid: pid of the source proeprty
+        :param source_pid: pid of the source property
         :param target_pid: pid of the target property
         :return: True if source and target property have a type mismatch. False otherwise
         """
