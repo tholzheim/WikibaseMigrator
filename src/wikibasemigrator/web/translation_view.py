@@ -205,10 +205,13 @@ class TranslationView:
         """
         if value is None:
             return None
+        if self.migration_mark is None:
+            logger.debug("MigrationMark is not defined thus validation of input values should not be possible")
+            return None
         result = None
         match self.migration_mark.property_type:
             case WbiDataTypes.WIKIBASE_ITEM:
-                if re.compile("Q\d+").fullmatch(value):
+                if re.compile(r"Q\d+").fullmatch(value):
                     pass
                 else:
                     result = "Value must be a valid Qid"
@@ -346,7 +349,7 @@ class TranslationView:
             summary = self.summary
             if not summary:
                 summary = None
-            await self.migration_callback(self.translations, summary)  #ToDo: add MigrationMark to migration callback
+            await self.migration_callback(self.translations, summary)  # ToDo: add MigrationMark to migration callback
 
     def display_missing_properties(self):
         """
