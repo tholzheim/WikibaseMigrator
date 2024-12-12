@@ -19,9 +19,10 @@ from wikibasemigrator import WbEntity
 from wikibasemigrator.exceptions import UnknownEntityTypeException, UserLoginRequiredException
 from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.merger import EntityMerger
+from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
-from wikibasemigrator.wikibase import Query, WbiDataTypes, WikibaseEntityTypes, get_default_user_agent
+from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
 

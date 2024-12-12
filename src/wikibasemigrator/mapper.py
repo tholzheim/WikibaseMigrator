@@ -4,8 +4,8 @@ from datetime import datetime
 from string import Template
 
 from wikibasemigrator import config, wikibase
+from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.profile import WikibaseConfig, WikibaseMigrationProfile
-from wikibasemigrator.wikibase import WbiDataTypes
 
 logger = logging.getLogger(__name__)
 

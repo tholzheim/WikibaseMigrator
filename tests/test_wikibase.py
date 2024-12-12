@@ -2,7 +2,8 @@ import unittest
 
 from pydantic import HttpUrl
 
-from wikibasemigrator.wikibase import MediaWikiEndpoint, Query, WikibaseEntityTypes, WikidataDataTypes
+from wikibasemigrator.model.datatypes import WikidataDataTypes
+from wikibasemigrator.wikibase import MediaWikiEndpoint, Query, WikibaseEntityTypes
 
 
 class TestWikibaseEntityTypes(unittest.TestCase):

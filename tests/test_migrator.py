@@ -8,10 +8,10 @@ from wikibaseintegrator.entities import ItemEntity
 from wikibaseintegrator.models import Snak
 
 from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.profile import load_profile
 from wikibasemigrator.model.translations import EntityTranslationResult
 from wikibasemigrator.qsgenerator import QuickStatementsGenerator
-from wikibasemigrator.wikibase import WbiDataTypes
 
 
 class TestWikibaseMigrator(unittest.TestCase):

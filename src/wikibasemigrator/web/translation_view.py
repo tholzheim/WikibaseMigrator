@@ -2,12 +2,15 @@ import csv
 import datetime
 import io
 import logging
+import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from nicegui import run, ui
+from nicegui import app, run, ui
 
 from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.datatypes import WbiDataTypes
+from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.qsgenerator import QuickStatementsGenerator
 from wikibasemigrator.web.components.code import Code
@@ -99,6 +102,7 @@ class TranslationView:
         self.source_labels: dict[str, str] | None = None
         self.target_labels: dict[str, str] | None = None
         self.summary = ""
+        self.migration_mark: MigrationMark | None = MigrationMark.from_config(self.profile.migration_mark)
 
     def setup_ui(self):
         """
@@ -150,16 +154,67 @@ class TranslationView:
         display migration controls
         :return:
         """
-        with ui.element("div").classes("container " + self.ROW_STYLE):
-            ui.input(label="summary", placeholder="Migrated items for...").bind_value(self, "summary").classes("grow")
-            btn_label = "Migrate"
-            if self.profile.ui_customizations.migration_button_label is not None:
-                btn_label = self.profile.ui_customizations.migration_button_label
-            info_icon = ui.icon("info").classes("text-primary")
-            info_icon.tooltip(
-                f"Migrate translated entities to {self.profile.target.name}. This step will edit the wiki!"
-            )  # noqa: E501
-            ui.button(text=btn_label, on_click=self.migrate).classes("max-w-1/3")
+        with ui.element("div").classes("flex flex-col gap-2"):
+            self.display_migration_mark()
+            with ui.element("div").classes(self.ROW_STYLE):
+                summary_input = ui.input(label="summary", placeholder="Migrated items for...")
+                summary_input.bind_value(self, "summary")
+                summary_input.classes("grow")
+                summary_input.props("clearable")
+                ui.icon("info").classes("text-primary").tooltip("Summary of or reason for the migration.")
+            with ui.element("div").classes(self.ROW_STYLE):
+                btn_label = "Migrate"
+                if self.profile.ui_customizations.migration_button_label is not None:
+                    btn_label = self.profile.ui_customizations.migration_button_label
+                ui.button(text=btn_label, on_click=self.migrate).classes("max-w-1/3")
+                info_icon = ui.icon("info").classes("text-primary")
+                info_icon.tooltip(
+                    f"Migrate translated entities to {self.profile.target.name}. This step will edit the wiki!"
+                )  # noqa: E501
+
+    def display_migration_mark(self):
+        """
+        display migration mark input field
+        :return:
+        """
+        if self.migration_mark is None:
+            return
+
+        with ui.element("div").classes(self.ROW_STYLE):
+            mark_input = ui.input(
+                label=f"{self.profile.migration_mark.label} ({self.profile.migration_mark.property_id})",
+                validation=self._validate_migration_mark_value,
+            )
+            mark_input.bind_value(app.storage.user, "migration_mark_value")
+            mark_input.classes("grow")
+            mark_input.props("clearable")
+            icon = ui.icon("info").classes("text-primary")
+            icon.tooltip("Migration mark that is added as statement to each migrated entity")
+
+    def _get_migration_mark_value(self) -> str:
+        """
+        Get Migration mark value
+        """
+        return app.storage.user.get("migration_mark_value")
+
+    def _validate_migration_mark_value(self, value: str) -> str | None:
+        """
+        validate migration mark value
+        :param value:
+        :return:
+        """
+        if value is None:
+            return None
+        result = None
+        match self.migration_mark.property_type:
+            case WbiDataTypes.WIKIBASE_ITEM:
+                if re.compile("Q\d+").fullmatch(value):
+                    pass
+                else:
+                    result = "Value must be a valid Qid"
+            case _:
+                pass
+        return result
 
     def display_translation_item_viewer(self):
         """
@@ -291,7 +346,7 @@ class TranslationView:
             summary = self.summary
             if not summary:
                 summary = None
-            await self.migration_callback(self.translations, summary)
+            await self.migration_callback(self.translations, summary)  #ToDo: add MigrationMark to migration callback
 
     def display_missing_properties(self):
         """

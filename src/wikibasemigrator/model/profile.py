@@ -6,6 +6,7 @@ from typing import Annotated
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
+from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.wikibase import MediaWikiEndpoint
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,16 @@ class BackReference(BaseModel):
     property: EntityBackReference
 
 
+class MigrationMarkConfig(BaseModel):
+    """
+    defines additional property that can be added to each migrated entity to mark the migration
+    """
+
+    property_id: str = Field(..., description="id of the property that should be used for the migration mark")
+    property_type: WbiDataTypes = Field(..., description="type of the property")
+    label: str = Field(..., description="label of the property")
+
+
 class UiCustomization(BaseModel):
     """
     defines different UI customizations
@@ -146,6 +157,7 @@ class WikibaseMigrationProfile(BaseModel):
     mapping: EntityMappingConfig
     back_reference: BackReference | None = None
     type_casts: TypeCastConfig = TypeCastConfig()
+    migration_mark: MigrationMarkConfig | None = None
     ui_customizations: UiCustomization | None = UiCustomization()
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:

@@ -54,6 +54,10 @@ back_reference:
   property:
     type: Property
     id: P343
+migration_mark:
+  property_id: P131
+  label: Research project ID
+  property_type: wikibase-item
 type_casts:
   enabled: True
   fallback_language: "en"

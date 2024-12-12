@@ -2,8 +2,8 @@ import unittest
 from pathlib import Path
 
 from wikibasemigrator.mapper import WikibaseItemMapper
+from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.profile import load_profile
-from wikibasemigrator.wikibase import WbiDataTypes
 
 
 class TestWikibaseItemMapper(unittest.TestCase):
