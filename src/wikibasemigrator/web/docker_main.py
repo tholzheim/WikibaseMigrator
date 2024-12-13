@@ -16,4 +16,5 @@ webserver.run(
     port=int(os.environ.get("WEBSERVER_PORT", 8080)),
     storage_secret=os.environ.get("STORAGE_SECRET"),
     reload=False,
+    reconnect_timeout=10,
 )
