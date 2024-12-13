@@ -154,13 +154,14 @@ class TranslationView:
         display migration controls
         :return:
         """
-        with ui.element("div").classes("flex flex-col gap-2"):
+        with ui.element("div").classes("flex flex-col gap-2 m-2"):
             self.display_migration_mark()
             with ui.element("div").classes(self.ROW_STYLE):
                 summary_input = ui.input(label="summary", placeholder="Migrated items for...")
                 summary_input.bind_value(self, "summary")
                 summary_input.classes("grow")
                 summary_input.props("clearable")
+                summary_input.props("outlined")
                 ui.icon("info").classes("text-primary").tooltip("Summary of or reason for the migration.")
             with ui.element("div").classes(self.ROW_STYLE):
                 btn_label = "Migrate"
@@ -188,6 +189,7 @@ class TranslationView:
             mark_input.bind_value(app.storage.user, "migration_mark_value")
             mark_input.classes("grow")
             mark_input.props("clearable")
+            mark_input.props("outlined")
             icon = ui.icon("info").classes("text-primary")
             icon.tooltip("Migration mark that is added as statement to each migrated entity")
 
@@ -251,15 +253,14 @@ class TranslationView:
                         ui.html(qs_icon.read_text())
                     ui.label("QuickStatements")
             with ui.element("div").classes("flex flex-col gap-2 container"):
-                with ui.element("div").classes(self.ROW_STYLE):
-                    if self.profile.target.quickstatement_url is not None:
-                        with ui.link(
-                            target=self.profile.target.quickstatement_url.unicode_string(),
-                            new_tab=True,
-                        ) as link:
-                            link.classes(self.ROW_STYLE)
-                            ui.label("Open Quickstatements Endpoint")
-                    ui.element("div").classes("grow")
+                if self.profile.target.quickstatement_url is not None:
+                    with ui.link(
+                        target=self.profile.target.quickstatement_url.unicode_string(),
+                        new_tab=True,
+                    ) as link:
+                        link.classes(self.ROW_STYLE)
+                        ui.label("Open Quickstatements Endpoint")
+                with ui.element("div"):
                     ui.button(
                         "Download",
                         on_click=lambda: ui.download(
