@@ -836,10 +836,11 @@ class WikibaseMigrator:
         :param migration_mark:
         :return:
         """
-        if migration_mark is None:
+        if migration_mark is None or migration_mark:
             return
         claim = migration_mark.get_claim()
-        EntityMerger().merge_statement(claim, translation.entity)
+        if claim is not None:
+            EntityMerger().merge_statement(claim, translation.entity)
 
     @staticmethod
     def _migrate_entity(

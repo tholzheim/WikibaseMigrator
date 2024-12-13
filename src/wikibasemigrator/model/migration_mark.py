@@ -34,7 +34,7 @@ class MigrationMark(BaseModel):
         Get the migration mark as claim
         :return:
         """
-        if self.value is None:
+        if self.value is None or self.value == "":
             return None
         claim = None
         match self.property_type:
