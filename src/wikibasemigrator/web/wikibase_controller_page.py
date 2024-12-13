@@ -5,6 +5,7 @@ from nicegui import ui
 
 from wikibasemigrator.exceptions import UserLoginRequiredException
 from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.web.migration_view import MigrationView
@@ -121,11 +122,14 @@ class WikibaseControllerPage(Webpage):
             self.translation_view.setup_ui()
             await self.translation_view.translate(selected_items)
 
-    async def load_migration_view(self, translations: EntitySetTranslationResult, summary: str):
+    async def load_migration_view(
+        self, translations: EntitySetTranslationResult, summary: str, migration_mark: MigrationMark | None = None
+    ):
         """
         load migration view and start migration of the given translations
         :param translations:
         :param summary:
+        :param migration_mark:
         :return:
         """
         if self.view_container is None:
@@ -133,4 +137,4 @@ class WikibaseControllerPage(Webpage):
         self.view_container.clear()
         with self.view_container:
             self.migration_view.setup_ui()
-            await self.migration_view.start_migration(translations, summary)
+            await self.migration_view.start_migration(translations, summary, migration_mark)

@@ -5,6 +5,7 @@ from concurrent.futures import Future
 from nicegui import run, ui
 
 from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.web.components.progress import ProgressBar
 from wikibasemigrator.web.translation_view import _get_csv_string, _get_tsv_string
@@ -36,7 +37,16 @@ class MigrationView:
             with ui.element("div").classes("container flex flex-col gap-2") as self.migration_container:
                 ui.spinner()
 
-    async def start_migration(self, translations: EntitySetTranslationResult, summary: str):
+    async def start_migration(
+        self, translations: EntitySetTranslationResult, summary: str, migration_mark: MigrationMark | None = None
+    ):
+        """
+        Start the migration process on the given translations
+        :param translations:
+        :param summary:
+        :param migration_mark:
+        :return:
+        """
         if self.migration_container is None:
             logger.debug("Migration container has not been setup")
             return
@@ -50,6 +60,7 @@ class MigrationView:
             self.migrator.migrate_entities_to_target,
             translations,
             summary=summary,
+            migration_mark=migration_mark,
             entity_done_callback=self._update_progress,
         )
         ui.notify("Migration completed", type="positive")

@@ -91,7 +91,7 @@ class TranslationView:
     def __init__(
         self,
         migrator: WikibaseMigrator,
-        migration_callback: Callable[[EntitySetTranslationResult, str], Awaitable[None]],
+        migration_callback: Callable[[EntitySetTranslationResult, str, MigrationMark], Awaitable[None]],
     ) -> None:
         self.migrator = migrator
         self.profile = self.migrator.profile
@@ -350,7 +350,11 @@ class TranslationView:
             summary = self.summary
             if not summary:
                 summary = None
-            await self.migration_callback(self.translations, summary)  # ToDo: add MigrationMark to migration callback
+            if self.migration_mark is not None:
+                self.migration_mark.value = self._get_migration_mark_value()
+            await self.migration_callback(
+                self.translations, summary, self.migration_mark
+            )  # ToDo: add MigrationMark to migration callback
 
     def display_missing_properties(self):
         """

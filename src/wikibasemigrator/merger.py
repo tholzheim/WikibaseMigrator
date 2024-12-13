@@ -94,18 +94,26 @@ class EntityMerger:
         :return:
         """
         for source_claim in source.claims:
-            merge_with_claim = self._find_equivalent_mainsnak(
-                source_claim, target.claims.get(source_claim.mainsnak.property_number)
-            )
-            if merge_with_claim:
-                self._merge_claim(source_claim, merge_with_claim)
-            else:
-                # ToDo: Implement merging of statements and report issue in wikibase integrator
-                #  → create test case and prepare fix
-                # Issue: if snak value is unknown → KeyError
-                target.claims.add(source_claim, action_if_exists=ActionIfExists.MERGE_REFS_OR_APPEND)
+            self.merge_statement(source_claim, target)
         for target_claim in target.claims:
             self._update_qualifier_order(target_claim)
+
+    def merge_statement(self, claim: Claim, target: WbEntity):
+        """
+        add the given claim to the target entity.
+        If the statement already exists, the claim is merged into the existing statement
+        :param claim: claim to add or merge
+        :param target: entity the claim is added to
+        :return:
+        """
+        merge_with_claim = self._find_equivalent_mainsnak(claim, target.claims.get(claim.mainsnak.property_number))
+        if merge_with_claim:
+            self._merge_claim(claim, merge_with_claim)
+        else:
+            # ToDo: Implement merging of statements and report issue in wikibase integrator
+            #  → create test case and prepare fix
+            # Issue: if snak value is unknown → KeyError
+            target.claims.add(claim, action_if_exists=ActionIfExists.MERGE_REFS_OR_APPEND)
 
     def _update_qualifier_order(self, claim: Claim):
         """

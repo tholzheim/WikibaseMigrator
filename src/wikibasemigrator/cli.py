@@ -11,6 +11,7 @@ from rich.table import Table
 
 from wikibasemigrator import config
 from wikibasemigrator.migrator import WikibaseMigrator
+from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.profile import WikibaseMigrationProfile, load_profile
 from wikibasemigrator.model.translations import EntitySetTranslationResult
 from wikibasemigrator.web.webserver import DEFAULT_ICON_PATH, Webserver
@@ -101,6 +102,12 @@ def migrate(
     ] = None,
     show_details: Annotated[bool, typer.Option(help="Show detailed information during the migration process")] = False,
     force: Annotated[bool, typer.Option(help="If True migrate items directly to target wikibase")] = False,
+    mark: Annotated[
+        str | None,
+        typer.Option(
+            help="Migration mark to value of the statement that should be added to the migrated entites. Must be configured in the migration profile."  # noqa: E501
+        ),
+    ] = None,
 ):
     """
     Migrate the provided entities
@@ -158,7 +165,16 @@ def migrate(
                 if show_details:
                     console.print(f"Migrated entity {result.created_entity.id}")
 
-            migrator.migrate_entities_to_target(translations, summary=summary, entity_done_callback=update_progress)
+            migration_mark = None
+            if mark is not None and profile.migration_mark is not None:
+                migration_mark = MigrationMark(
+                    property_id=profile.migration_mark.property_id,
+                    property_type=profile.migration_mark.property_type,
+                    value=mark,
+                )
+            migrator.migrate_entities_to_target(
+                translations, summary=summary, migration_mark=migration_mark, entity_done_callback=update_progress
+            )
         show_migration_result(translations, profile)
         console.print("Migration done", style="bold green")
 

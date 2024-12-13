@@ -20,6 +20,7 @@ from wikibasemigrator.exceptions import UnknownEntityTypeException, UserLoginReq
 from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.merger import EntityMerger
 from wikibasemigrator.model.datatypes import WbiDataTypes
+from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
 from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
@@ -793,12 +794,14 @@ class WikibaseMigrator:
         translations: EntitySetTranslationResult,
         summary: str | None,
         entity_done_callback: Callable[[Future], None] | None = None,
+        migration_mark: MigrationMark | None = None,
     ) -> list[ItemEntity | PropertyEntity]:
         """
         migrate given entities to the target wikibase instance
         :param translations:
         :param summary: summary of the changes
         :param entity_done_callback: callback function to call for each migrated entity e.g. for progress tracking
+        :param migration_mark:
         :return: list of migrated entities containing the new ID in case of creation
         """
         logger.info(f"Migrating {len(translations.entities)} entities to target {self.profile.target.name}: {summary}")
@@ -807,6 +810,7 @@ class WikibaseMigrator:
             futures = []
             login = self.get_wikibase_login(self.profile.target)
             for entity in translations:
+                self.add_migration_mark_to_entity(entity, migration_mark)
                 future = executor.submit(
                     self._migrate_entity,
                     entity=entity,
@@ -822,6 +826,20 @@ class WikibaseMigrator:
                 result = future.result()
                 results.append(result)
             return results
+
+    def add_migration_mark_to_entity(
+        self, translation: EntityTranslationResult, migration_mark: MigrationMark | None = None
+    ) -> None:
+        """
+        Add migration mark to the given entity.
+        :param translation:
+        :param migration_mark:
+        :return:
+        """
+        if migration_mark is None:
+            return
+        claim = migration_mark.get_claim()
+        EntityMerger().merge_statement(claim, translation.entity)
 
     @staticmethod
     def _migrate_entity(
