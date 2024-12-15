@@ -32,3 +32,21 @@ class TestEntityMerger(TestCase):
         expected_json = expected_entity.get_json()
         result = DeepDiff(actual_json, expected_json, ignore_order=True)
         self.assertEqual(result, {})
+
+    def test_issue_28(self):
+        """
+        test issue 28
+        merging of statements with existing qualifiers lead to duplicate reference blocks
+        """
+        resource_dir = Path(__file__).parent / "resources/merger"
+        item_json = json.loads(resource_dir.joinpath("Q447922_reduced.json").read_text())
+        wbi = WikibaseIntegrator()
+        prop_number = "P82"
+        # merging the item with itself should yield no changes
+        source_entity = ItemEntity(api=wbi).from_json(item_json)
+        target_entity = ItemEntity(api=wbi).from_json(item_json)
+        merged_entity = EntityMerger().merge(source_entity, target_entity)
+        self.assertEqual(
+            len(source_entity.claims.get(prop_number)[0].references),
+            len(merged_entity.claims.get(prop_number)[0].references),
+        )

@@ -6,7 +6,7 @@ import json
 import logging
 
 from wikibaseintegrator.entities import ItemEntity
-from wikibaseintegrator.models import Claim, Claims, Reference, Snak
+from wikibaseintegrator.models import Claim, Claims, Qualifiers, Reference, Snak
 from wikibaseintegrator.wbi_enums import ActionIfExists
 
 from wikibasemigrator import WbEntity
@@ -135,20 +135,44 @@ class EntityMerger:
         """
         source_hash = self._get_datavalue_hash(claim.mainsnak.datavalue)
         for target_claim in claims:
-            source_or_claim_have_no_qualifier = len(target_claim.qualifiers) == 0 or len(claim.qualifiers) == 0
-            if (
-                self._get_datavalue_hash(target_claim.mainsnak.datavalue) == source_hash
-                and source_or_claim_have_no_qualifier
-            ):
+            has_compatible_qualifiers = self._qualifiers_merge_compatible(claim.qualifiers, target_claim.qualifiers)
+            statement_values_equal = self._get_datavalue_hash(target_claim.mainsnak.datavalue) == source_hash
+            if statement_values_equal and has_compatible_qualifiers:
                 return target_claim
         return False
+
+    def _qualifiers_merge_compatible(self, source_qualifiers: Qualifiers, target_qualifiers: Qualifiers) -> bool:
+        """
+        Checks if the given qualifiers are compatible for merging.
+        Sets of qualifiers are compatible for merging iff one of the sets is empty or each set consists of equal values
+        :param source_qualifiers:
+        :param target_qualifiers:
+        :return:
+        """
+        source_or_claim_have_no_qualifier = len(source_qualifiers) == 0 or len(target_qualifiers) == 0
+        return source_or_claim_have_no_qualifier or self._has_equivalent_qualifier(source_qualifiers, target_qualifiers)
+
+    def _has_equivalent_qualifier(self, source_qualifiers: Qualifiers, target_qualifiers: Qualifiers) -> bool:
+        """
+        Check if the given qualifiers are equivalent
+        :param source_qualifiers:
+        :param target_qualifiers:
+        :return:
+        """
+        target_qualifier_list = [target_qualifier for target_qualifier in target_qualifiers]
+        return all(
+            [
+                self._has_equivalent_snak(source_qualifier, target_qualifier_list)
+                for source_qualifier in source_qualifiers
+            ]
+        )
 
     def _has_equivalent_snak(self, snak: Snak, snaks: list[Snak]) -> bool:
         """
         Check if an equivalent snak from given list of snaks exists
         Only checks if the mainsnak is equivalent as the qualifier are also merged
-        :param claim:
-        :param claims:
+        :param snak:
+        :param snaks:
         :return:
         """
         source_hash = self._get_datavalue_hash(snak.datavalue)
@@ -158,8 +182,8 @@ class EntityMerger:
         """
         Check if an equivalent reference from given list of references exists
         Only checks if the mainsnak is equivalent as the qualifier are also merged
-        :param claim:
-        :param claims:
+        :param reference:
+        :param references:
         :return:
         """
         source_hash = self._get_reference_hash(reference)
