@@ -145,8 +145,8 @@ class TranslationView:
                 self.display_migration_controls()
             with ui.element("div").classes("container flex flex-col pt-6 gap-2"):
                 self.display_applied_mappings()
-                self.display_translation_item_viewer()
                 self.display_missing_mappings()
+                self.display_translation_item_viewer()
                 self.display_quickstatements()
 
     def display_migration_controls(self):
@@ -246,13 +246,17 @@ class TranslationView:
         qs_generator = QuickStatementsGenerator()
         quickstatements = qs_generator.generate_items(self.translations.get_target_entities())
         qs_icon = Path(__file__).parent.joinpath("../resources/Commons_to_Wikidata_QuickStatements.svg")
-        with ui.expansion(text="QuickStatements", group="group").classes(self.EXPANSION_STYLE) as expansion:
+        with ui.expansion(text="QuickStatements", group="group") as expansion:
+            expansion.classes(self.EXPANSION_STYLE)
             with expansion.add_slot("header"):
-                with ui.element("div").classes("items-center " + self.ROW_STYLE):
+                with ui.element("div").classes("items-center w-full " + self.ROW_STYLE):
                     if self.profile.target.quickstatement_url is not None:
                         ui.html(qs_icon.read_text())
                     ui.label("QuickStatements")
             with ui.element("div").classes("flex flex-col gap-2 container"):
+                ui.label(
+                    "QuickStatements for manual migration (NOT recommended, as it is less accurate for certain property types)"  # noqa: E501
+                )
                 if self.profile.target.quickstatement_url is not None:
                     with ui.link(
                         target=self.profile.target.quickstatement_url.unicode_string(),
@@ -275,7 +279,9 @@ class TranslationView:
         display missing mappings
         :return:
         """
-        with ui.expansion(text="Missing Mappings", group="group").classes(self.EXPANSION_STYLE):
+        caption = f"Mappings of properties and items that are defined in {self.profile.source.name} but missing in {self.profile.target.name}"  # noqa: E501
+        with ui.expansion(text="Missing Mappings", group="group", caption=caption) as expansion:
+            expansion.classes(self.EXPANSION_STYLE)
             self.display_missing_properties()
             self.display_missing_items()
 
@@ -488,7 +494,9 @@ class TranslationView:
                     "target": f"""<a href="{target_url}" target="_blank">{_get_entity_label(target_id, target_label)}</a>""",  # noqa: E501
                 }
             )
-        with ui.expansion(text="Applied Mappings", group="group").classes(self.EXPANSION_STYLE):
+        caption = f"Existing mappings between {self.profile.source.name} and {self.profile.target.name} that are used by the selected entities"  # noqa: E501
+        with ui.expansion(text="Applied Mappings", group="group", caption=caption) as expansion:
+            expansion.classes(self.EXPANSION_STYLE)
             with ui.element("div").classes("flex flex-col gap-2 w-full"):
                 ui.label(f"{len(mappings)} mappings applied")
                 ui.aggrid(
