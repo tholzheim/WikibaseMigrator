@@ -65,11 +65,14 @@ class Webserver:
             return response
 
         @ui.page("/")
-        async def main_page(client: Client) -> None:
+        async def main_page(client: Client, entities: str | None = None) -> None:
             await client.connected()
             profile = self.get_profile()
             user = await self.get_user()
-            WikibaseControllerPage(profile, self.get_icon_path(), user=user).setup_ui()
+            controller_page = WikibaseControllerPage(profile, self.get_icon_path(), user=user)
+            controller_page.setup_ui()
+            if entities is not None:
+                controller_page.select_entities(entities)
 
         @ui.page("/config")
         async def config_page(client: Client) -> None:

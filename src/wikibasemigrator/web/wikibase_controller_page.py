@@ -8,6 +8,7 @@ from wikibasemigrator.migrator import WikibaseMigrator
 from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.profile import WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult
+from wikibasemigrator.web.item_selectors import ItemSelectorElement
 from wikibasemigrator.web.migration_view import MigrationView
 from wikibasemigrator.web.oauth import MediaWikiUserIdentity
 from wikibasemigrator.web.selection_view import SelectionView
@@ -84,6 +85,18 @@ class WikibaseControllerPage(Webpage):
                     )
                 else:
                     self.selection_view.setup_ui()
+
+    def select_entities(self, entities: str):
+        """
+        Add given entities to the list of entities selected.
+        :param entities:
+        :return:
+        """
+        selector_id = 1
+        self.selection_view.switch_to_selector(selector_id)
+        selector = self.selection_view.selectors.get(selector_id)
+        if isinstance(selector, ItemSelectorElement):
+            selector.value = entities
 
     def requires_login(self) -> bool:
         """
