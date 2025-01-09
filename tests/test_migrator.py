@@ -106,6 +106,20 @@ class TestWikibaseMigrator(unittest.TestCase):
         self.assertEqual(new_snak.mainsnak.datatype, WbiDataTypes.QUANTITY.value)
         self.assertEqual(new_snak.mainsnak.datavalue.get("value").get("amount"), "+1")
 
+    def test_exclusion_of_redirected_sitelinks(self):
+        """
+        test if redirected sitelinks are excluded in the migration process
+        see https://github.com/tholzheim/WikibaseMigrator/issues/30
+        """
+        entity_json = json.loads(self.resource_dir.joinpath("Q23693.json").read_text())
+        source = ItemEntity().from_json(entity_json)
+        target = ItemEntity().new()
+        used_sitelinks = list(source.sitelinks.sitelinks.keys())
+        self.assertIn("dewiki", used_sitelinks)
+        self.assertIn("dewiki", source.sitelinks.sitelinks)
+        self.migrator.translate_sitelinks(source, target, allowed_sitelinks=used_sitelinks)
+        self.assertNotIn("dewiki", target.sitelinks.sitelinks)
+
 
 if __name__ == "__main__":
     unittest.main()

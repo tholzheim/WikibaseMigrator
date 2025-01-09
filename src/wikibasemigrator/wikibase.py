@@ -330,3 +330,11 @@ class WikibaseEntityTypes(str, Enum):
         Returns list of Wikibase types which support sitelinks
         """
         return [WikibaseEntityTypes.ITEM]
+
+
+class WikibaseBadges(str, Enum):
+    """
+    wikibase badges which are broadly used by Wikidata
+    """
+
+    SITELINK_REDIRECT = "Q70894304"

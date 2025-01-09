@@ -23,7 +23,7 @@ from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.migration_mark import MigrationMark
 from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
-from wikibasemigrator.wikibase import Query, WikibaseEntityTypes, get_default_user_agent
+from wikibasemigrator.wikibase import Query, WikibaseBadges, WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -559,7 +559,10 @@ class WikibaseMigrator:
             for sitelink in source.sitelinks.sitelinks.values():
                 if sitelink.site not in allowed_sitelinks:
                     continue
-                # ToDo: badges also require a mapping → currently not queried
+                # ToDo: badges also require a mapping? → currently not queried
+                if WikibaseBadges.SITELINK_REDIRECT in sitelink.badges:
+                    logger.debug(f"Skipping {sitelink} as sitelink is redirected")
+                    continue
                 target.sitelinks.set(site=sitelink.site, title=sitelink.title)
 
     def translate_claims(self, source: WbEntity, target: WbEntity, result: EntityTranslationResult) -> None:
