@@ -120,6 +120,18 @@ class TestWikibaseMigrator(unittest.TestCase):
         self.migrator.translate_sitelinks(source, target, allowed_sitelinks=used_sitelinks)
         self.assertNotIn("dewiki", target.sitelinks.sitelinks)
 
+    @unittest.skip("Queries Wikidata leading to failure in github workflows")
+    def test_migration_of_complete_reference_block(self):
+        """
+        tests if a reference block is only migrated iff all statements of the block can be translated
+        see https://github.com/tholzheim/WikibaseMigrator/issues/29
+        """
+        result = self.migrator.translate_entities_by_id(["Q3174599"])
+        translated_entity = result.entities.get("Q3174599")
+        claim_translated = translated_entity.entity.claims.get("P2")[0]
+        claim_original = translated_entity.original_entity.claims.get("P31")[0]
+        self.assertTrue(len(claim_translated.references) < len(claim_original.references))
+
 
 if __name__ == "__main__":
     unittest.main()

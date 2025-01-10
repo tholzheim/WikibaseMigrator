@@ -618,6 +618,7 @@ class WikibaseMigrator:
         new_references = References()
         for reference in claim.references:
             new_reference = Reference()
+            new_reference_completely_translated = True
             for snak in reference.snaks:
                 new_snak = self._translate_snak(snak, translation_result=result)
                 if new_snak is not None:
@@ -625,8 +626,9 @@ class WikibaseMigrator:
                     new_reference.add(new_snak)
                 else:
                     # ToDo: Handle missing property in target
+                    new_reference_completely_translated = False
                     pass
-            if len(new_reference.snaks) > 0:
+            if len(new_reference.snaks) > 0 and new_reference_completely_translated:
                 # ToDo: Add action_if_exists once implemented
                 new_references.add(new_reference)
         return new_references
