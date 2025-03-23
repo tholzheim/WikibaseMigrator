@@ -21,7 +21,12 @@ from wikibasemigrator.mapper import WikibaseItemMapper
 from wikibasemigrator.merger import EntityMerger
 from wikibasemigrator.model.datatypes import WbiDataTypes
 from wikibasemigrator.model.migration_mark import MigrationMark
-from wikibasemigrator.model.profile import EntityBackReferenceType, WikibaseConfig, WikibaseMigrationProfile
+from wikibasemigrator.model.profile import (
+    EntityBackReferenceType,
+    MediaWikiApiConfig,
+    WikibaseConfig,
+    WikibaseMigrationProfile,
+)
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
 from wikibasemigrator.wikibase import Query, WikibaseBadges, WikibaseEntityTypes, get_default_user_agent
 
@@ -126,6 +131,7 @@ class WikibaseMigrator:
             login=login,
             allow_anonymous=allow_anonymous,
             is_bot=is_bot,
+            **wikibase_config.mediawiki_api_config.get_parameters(),
             **kwargs,
         )
         logger.debug(f"Querying entity batch of {len(entity_ids)} entities took {datetime.now() - start}")
@@ -234,14 +240,23 @@ class WikibaseMigrator:
             logger.debug(f"Retrieving item {entity_id} from {wikibase_config.name}")
             start_time = datetime.now()
             user_agent = get_default_user_agent()
+            mediawiki_api_config = wikibase_config.mediawiki_api_config.get_parameters()
             if entity_id.startswith("Q"):
-                item = wbi.item.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+                item = wbi.item.get(
+                    entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent, **mediawiki_api_config
+                )
             elif entity_id.startswith("P"):
-                item = wbi.property.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+                item = wbi.property.get(
+                    entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent, **mediawiki_api_config
+                )
             elif entity_id.startswith("L"):
-                item = wbi.lexeme.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+                item = wbi.lexeme.get(
+                    entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent, **mediawiki_api_config
+                )
             elif entity_id.startswith("M"):
-                item = wbi.mediainfo.get(entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent)
+                item = wbi.mediainfo.get(
+                    entity_id, mediawiki_api_url=mediawiki_api_url, user_agent=user_agent, **mediawiki_api_config
+                )
             else:
                 raise UnknownEntityTypeException(entity_id)
             logger.debug(f"Entity {entity_id} retrival took {(datetime.now() - start_time).total_seconds()}s")
@@ -823,6 +838,7 @@ class WikibaseMigrator:
                     mediawiki_api_url=self.profile.target.mediawiki_api_url.unicode_string(),
                     tags=self.profile.target.get_tags(),
                     login=login,
+                    mediawiki_api_config=self.profile.target.mediawiki_api_config,
                 )
                 futures.append(future)
                 if entity_done_callback:
@@ -854,6 +870,7 @@ class WikibaseMigrator:
         summary: str | None = None,
         tags: list[str] | None = None,
         login: wbi_login.Login | wbi_login.Clientlogin | wbi_login.OAuth1 | wbi_login.OAuth2 | None = None,
+        mediawiki_api_config: MediaWikiApiConfig | None = None,
     ) -> EntityTranslationResult:
         """
         migrates given entity to the given wikibase instance (url)
@@ -863,6 +880,8 @@ class WikibaseMigrator:
         :param tags: tags to add to the revision
         :return: entity with the ID
         """
+        if mediawiki_api_config is None:
+            mediawiki_api_config = MediaWikiApiConfig()
         try:
             if logger.level <= logging.DEBUG:
                 entity_json = entity.entity.get_json()
@@ -871,7 +890,13 @@ class WikibaseMigrator:
                 )
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(json.dumps(entity_json, indent=4))
-            res = entity.entity.write(mediawiki_api_url=mediawiki_api_url, summary=summary, tags=tags, login=login)
+            res = entity.entity.write(
+                mediawiki_api_url=mediawiki_api_url,
+                summary=summary,
+                tags=tags,
+                login=login,
+                **mediawiki_api_config.get_parameters(),
+            )
             entity.created_entity = res
         except MWApiError as e:
             logger.info(f"Failed to migrate entity {entity.original_entity.id}")

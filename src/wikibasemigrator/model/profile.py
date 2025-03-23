@@ -22,6 +22,20 @@ class UserToken(BaseModel):
     oauth_callback_confirmed: bool
 
 
+class MediaWikiApiConfig(BaseModel):
+    """
+    mediawiki api parameter configuration
+    """
+
+    maxlag: int | None = None
+
+    def get_parameters(self) -> dict:
+        """
+        Get the parameter configurations which are not None
+        """
+        return {key: value for key, value in self.model_dump().items() if value is not None}
+
+
 class WikibaseConfig(BaseModel):
     """
     configuration for a wikibase api
@@ -43,6 +57,7 @@ class WikibaseConfig(BaseModel):
     requires_login: bool = True
     user_token: UserToken | None = None
     tag: str | None = None
+    mediawiki_api_config: MediaWikiApiConfig = MediaWikiApiConfig()
 
     def __post_init__(self):
         if isinstance(self.user, str) and self.user.strip() == "":
