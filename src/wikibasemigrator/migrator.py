@@ -815,7 +815,7 @@ class WikibaseMigrator:
         summary: str | None,
         entity_done_callback: Callable[[Future], None] | None = None,
         migration_mark: MigrationMark | None = None,
-    ) -> list[ItemEntity | PropertyEntity]:
+    ) -> list[EntitySetTranslationResult]:
         """
         migrate given entities to the target wikibase instance
         :param translations:
