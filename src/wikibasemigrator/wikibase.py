@@ -285,7 +285,8 @@ class MediaWikiEndpoint:
         res = {}
         try:
             logger.debug(f"Querying supported languages from {mediawiki_api_url}")
-            response = requests.get(mediawiki_api_url, params=params)
+            headers = {'User-Agent': get_default_user_agent()}
+            response = requests.get(mediawiki_api_url, params=params, headers=headers)
             data = response.json()
         except Exception as e:
             logger.error(e)
@@ -306,7 +307,8 @@ class MediaWikiEndpoint:
         """
         query = "action=query&titles=Main_Page&prop=revisions&rvprop=content&format=json"
         try:
-            response = requests.get(f"{mediawiki_api_url.unicode_string()}?{query}")
+            headers = {'User-Agent': get_default_user_agent()}
+            response = requests.get(f"{mediawiki_api_url.unicode_string()}?{query}", headers=headers)
             response.raise_for_status()
         except Exception:
             return False
