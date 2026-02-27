@@ -527,11 +527,12 @@ class WikibaseMigrator:
             mappings = self.profile.type_casts.mul_replacement_languages
             for target_language in mappings:
                 if isinstance(mul_value, list) and all(isinstance(x, Alias) for x in mul_value):
-                    new_value  = [alias.value for alias in mul_value]
-                    target.set(language=target_language, values=new_value, action_if_exists=ActionIfExists.APPEND_OR_REPLACE)
+                    new_value = [alias.value for alias in mul_value]
+                    target.set(
+                        language=target_language, values=new_value, action_if_exists=ActionIfExists.APPEND_OR_REPLACE
+                    )
                 else:
                     target.set(language=target_language, value=mul_value.value, action_if_exists=ActionIfExists.KEEP)
-
 
     def translate_labels(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]) -> None:
         """
