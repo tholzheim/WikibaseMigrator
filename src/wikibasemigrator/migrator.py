@@ -9,7 +9,7 @@ from pathlib import Path
 from wikibaseintegrator import WikibaseIntegrator, datatypes, wbi_login
 from wikibaseintegrator.datatypes import BaseDataType
 from wikibaseintegrator.entities import ItemEntity, LexemeEntity, MediaInfoEntity, PropertyEntity
-from wikibaseintegrator.models import Claim, Qualifiers, Reference, References, Snak
+from wikibaseintegrator.models import Alias, Aliases, Claim, LanguageValues, Qualifiers, Reference, References, Snak
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator.wbi_enums import ActionIfExists, WikibaseSnakType
 from wikibaseintegrator.wbi_exceptions import MissingEntityException, MWApiError, NonExistentEntityError
@@ -519,6 +519,20 @@ class WikibaseMigrator:
             self.add_back_reference(new_entity, entity.id)
         return result
 
+    def _resolve_mul(self, source: LanguageValues | Aliases, target: LanguageValues | Aliases):
+        if not self.profile.type_casts.has_multilingual_mapping_enabled():
+            return
+        mul_value = source.get("mul")
+        if mul_value is not None:
+            mappings = self.profile.type_casts.mul_replacement_languages
+            for target_language in mappings:
+                if isinstance(mul_value, list) and all(isinstance(x, Alias) for x in mul_value):
+                    new_value  = [alias.value for alias in mul_value]
+                    target.set(language=target_language, values=new_value, action_if_exists=ActionIfExists.APPEND_OR_REPLACE)
+                else:
+                    target.set(language=target_language, value=mul_value.value, action_if_exists=ActionIfExists.KEEP)
+
+
     def translate_labels(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]) -> None:
         """
         translate the labels from the source entity to the target entity
@@ -528,6 +542,7 @@ class WikibaseMigrator:
             if label.language not in allowed_languages:
                 continue
             target.labels.set(label.language, label.value)
+        self._resolve_mul(source.labels, target.labels)
 
     def translate_descriptions(self, source: WbEntity, target: WbEntity, allowed_languages: list[str]):
         """
@@ -560,6 +575,8 @@ class WikibaseMigrator:
                 continue
             alias_values = [alias.value for alias in aliases]
             target.aliases.set(language, alias_values)
+
+        self._resolve_mul(source.aliases, target.aliases)
 
     def translate_sitelinks(self, source: WbEntity, target: WbEntity, allowed_sitelinks: list[str]):
         """

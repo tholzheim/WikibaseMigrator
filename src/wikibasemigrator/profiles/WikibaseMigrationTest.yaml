@@ -57,4 +57,5 @@ back_reference:
     id: P8
 type_casts:
   enabled: True
-  fallback_language: "en"
+  fallback_language: "mul"
+  mul_replacement_languages: ["de", "en", "fr", "es", "it"]

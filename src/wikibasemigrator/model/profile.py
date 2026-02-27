@@ -103,6 +103,21 @@ class TypeCastConfig(BaseModel):
     fallback_language: Annotated[
         str, Field(description="Language to use when casting from a value without to a value with langauge")
     ] = "mul"
+    mul_replacement_languages: list[str] = Field(
+            description="Languages to map the mul value to. The multilingual tag is not supported in all "
+                        "systems. With this mapping it can be resolved to a standard set of languages. "
+                        "If not set the mul value will not mapped to other languages",
+            default_factory=list
+    )
+
+    def has_multilingual_mapping_enabled(self):
+        """
+        Returns True if multilingual values need to be mapped to a set of languages
+        """
+        if self.mul_replacement_languages is None or self.mul_replacement_languages == []:
+            return False
+        else:
+            return True
 
 
 class EntityMappingConfig(BaseModel):

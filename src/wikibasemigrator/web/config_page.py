@@ -97,4 +97,5 @@ class ConfigPage(Webpage):
 
 * **Enabled**: {self.profile.type_casts.enabled}
 * **Fallback language**: {self.profile.type_casts.fallback_language}
+* **Multilanguage Replacement Mappings**: {self.profile.type_casts.mul_replacement_languages}
             """)
