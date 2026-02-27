@@ -58,7 +58,7 @@ class Query:
             $entity_ids
           }
           BIND(IRI(CONCAT("$item_prefix", STR( ?qid))) as ?wd_qid)
-          ?wd_qid rdfs:label ?label. FILTER(lang(?label)="$language")
+          OPTIONAL{ ?wd_qid rdfs:label ?label. FILTER(lang(?label)="$language")}
         }
         """)
         if language is None:
