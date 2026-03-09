@@ -19,7 +19,7 @@ class UserToken(BaseModel):
 
     oauth_token: str
     oauth_token_secret: str
-    oauth_callback_confirmed: bool
+    oauth_callback_confirmed: bool = True
 
 
 class MediaWikiApiConfig(BaseModel):
@@ -170,6 +170,8 @@ class UiCustomization(BaseModel):
     """
 
     migration_button_label: str | None = None
+    show_quickstatements: bool = False
+    show_translation_item_viewer: bool = False
 
 
 class WikibaseMigrationProfile(BaseModel):

@@ -146,8 +146,10 @@ class TranslationView:
             with ui.element("div").classes("container flex flex-col pt-6 gap-2"):
                 self.display_applied_mappings()
                 self.display_missing_mappings()
-                self.display_translation_item_viewer()
-                self.display_quickstatements()
+                if self.profile.ui_customizations.show_translation_item_viewer:
+                    self.display_translation_item_viewer()
+                if self.profile.ui_customizations.show_quickstatements:
+                    self.display_quickstatements()
 
     def display_migration_controls(self):
         """
@@ -243,8 +245,14 @@ class TranslationView:
         display quickstatements
         :return:
         """
-        qs_generator = QuickStatementsGenerator()
-        quickstatements = qs_generator.generate_items(self.translations.get_target_entities())
+        try:
+            qs_generator = QuickStatementsGenerator()
+            quickstatements = qs_generator.generate_items(self.translations.get_target_entities())
+        except Exception as e:
+            logger.error(e)
+            with ui.expansion(text="QuickStatements", group="group") as expansion:
+                ui.label("An error occurred while generating quickstatements!")
+            return
         qs_icon = Path(__file__).parent.joinpath("../resources/Commons_to_Wikidata_QuickStatements.svg")
         with ui.expansion(text="QuickStatements", group="group") as expansion:
             expansion.classes(self.EXPANSION_STYLE)
