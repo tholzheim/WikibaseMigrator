@@ -187,7 +187,7 @@ class WikibaseMigrationProfile(BaseModel):
     back_reference: BackReference | None = None
     type_casts: TypeCastConfig = TypeCastConfig()
     migration_mark: MigrationMarkConfig | None = None
-    ui_customizations: UiCustomization | None = UiCustomization()
+    ui_customizations: UiCustomization = UiCustomization()
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:
         """
