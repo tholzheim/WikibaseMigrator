@@ -49,7 +49,7 @@ class Webserver:
         )
         app.add_middleware(SessionMiddleware, secret_key=os.environ.get("NICEGUI_SECRET_KEY", ""))
 
-        @app.route("/oauth_callback")
+        @app.get("/oauth_callback")
         async def oauth_callback(request: Request):
             wiki_oauth = self.oauth.create_client("mediawiki")
             token = await wiki_oauth.authorize_access_token(request)
@@ -57,7 +57,7 @@ class Webserver:
 
             return RedirectResponse("/")
 
-        @app.route("/login/wiki")
+        @app.get("/login/wiki")
         async def login_via_wiki(request: Request):
             wiki_oauth = self.oauth.create_client("mediawiki")
             redirect_url = "oob"
