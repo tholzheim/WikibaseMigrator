@@ -188,6 +188,7 @@ class WikibaseMigrationProfile(BaseModel):
     type_casts: TypeCastConfig = TypeCastConfig()
     migration_mark: MigrationMarkConfig | None = None
     ui_customizations: UiCustomization = UiCustomization()
+    throttle: float | None = None  # max entities per second; None = unlimited
 
     def get_wikibase_config_by_name(self, name: str) -> WikibaseConfig | None:
         """

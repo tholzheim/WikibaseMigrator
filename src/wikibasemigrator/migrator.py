@@ -1,6 +1,7 @@
 import json
 import logging
 import tempfile
+import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -844,6 +845,7 @@ class WikibaseMigrator:
         """
         logger.info(f"Migrating {len(translations.entities)} entities to target {self.profile.target.name}: {summary}")
         results = []
+        delay = 1.0 / self.profile.throttle if self.profile.throttle else None
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = []
             login = self.get_wikibase_login(self.profile.target)
@@ -861,6 +863,8 @@ class WikibaseMigrator:
                 futures.append(future)
                 if entity_done_callback:
                     future.add_done_callback(entity_done_callback)
+                if delay:
+                    time.sleep(delay)
             for future in as_completed(futures):
                 result = future.result()
                 results.append(result)
