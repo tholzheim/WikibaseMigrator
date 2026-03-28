@@ -1,7 +1,7 @@
 import json
 import logging
+import math
 import tempfile
-import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -29,6 +29,7 @@ from wikibasemigrator.model.profile import (
     WikibaseMigrationProfile,
 )
 from wikibasemigrator.model.translations import EntitySetTranslationResult, EntityTranslationResult
+from wikibasemigrator.util.RateLimiter import RateLimiter
 from wikibasemigrator.wikibase import Query, WikibaseBadges, WikibaseEntityTypes, get_default_user_agent
 
 logger = logging.getLogger(__name__)
@@ -834,6 +835,7 @@ class WikibaseMigrator:
         summary: str | None,
         entity_done_callback: Callable[[Future], None] | None = None,
         migration_mark: MigrationMark | None = None,
+        max_workers: int = 10,
     ) -> list[EntitySetTranslationResult]:
         """
         migrate given entities to the target wikibase instance
@@ -841,18 +843,37 @@ class WikibaseMigrator:
         :param summary: summary of the changes
         :param entity_done_callback: callback function to call for each migrated entity e.g. for progress tracking
         :param migration_mark:
+        :param max_workers: maximum number of worker threads
         :return: list of migrated entities containing the new ID in case of creation
         """
         logger.info(f"Migrating {len(translations.entities)} entities to target {self.profile.target.name}: {summary}")
+        throttle = self.profile.throttle
+        if throttle:
+            # Scale workers: no point having 10 workers if you only
+            # allow 0.5 calls/s — 1 is enough. For higher rates,
+            # use more workers so the limiter can hand out slots.
+            num_workers = min(max_workers, max(1, math.ceil(throttle)))
+            limiter = RateLimiter(throttle)
+        else:
+            # Unlimited: full parallelism, no limiter
+            num_workers = max_workers
+            limiter = None
+        login = self.get_wikibase_login(self.profile.target)
         results = []
-        delay = 1.0 / self.profile.throttle if self.profile.throttle else None
-        with ThreadPoolExecutor(max_workers=10) as executor:
+
+        def _throttled_migrate(entity, **kwargs):
+            """Wrapper that acquires a rate-limit slot INSIDE the worker,
+            right before the actual API call."""
+            if limiter:
+                limiter.acquire()
+            return self._migrate_entity(entity=entity, **kwargs)
+
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = []
-            login = self.get_wikibase_login(self.profile.target)
             for entity in translations:
                 self.add_migration_mark_to_entity(entity, migration_mark)
                 future = executor.submit(
-                    self._migrate_entity,
+                    _throttled_migrate,
                     entity=entity,
                     summary=summary,
                     mediawiki_api_url=self.profile.target.mediawiki_api_url.unicode_string(),
@@ -863,12 +884,10 @@ class WikibaseMigrator:
                 futures.append(future)
                 if entity_done_callback:
                     future.add_done_callback(entity_done_callback)
-                if delay:
-                    time.sleep(delay)
             for future in as_completed(futures):
                 result = future.result()
                 results.append(result)
-            return results
+        return results
 
     def add_migration_mark_to_entity(
         self, translation: EntityTranslationResult, migration_mark: MigrationMark | None = None
