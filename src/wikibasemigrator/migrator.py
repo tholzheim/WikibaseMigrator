@@ -940,12 +940,12 @@ class WikibaseMigrator:
             )
             entity.created_entity = res
         except MWApiError as e:
-            logger.info(f"Failed to migrate entity {entity.original_entity.id}")
+            logger.info(f"Failed to migrate entity {entity.original_entity.id} over {mediawiki_api_url}")
             error = f"Error: {str(e)}, details: {e.messages}"
             entity.errors.append(error)
             logger.exception(e)
         except Exception as e:
-            logger.info(f"Failed to migrate entity {entity.original_entity.id}")
+            logger.info(f"Failed to migrate entity {entity.original_entity.id} over {mediawiki_api_url}")
             entity.errors.append(str(e))
             logger.exception(e)
         return entity
